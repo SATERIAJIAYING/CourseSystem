@@ -39,9 +39,10 @@ public:
 
 class Course {
 private:
+	int num, maxSize;
+
 	// 存储选课学生id动态数组
 	unsigned* studentList;
-	int num, maxSize;
 	std::string name, place, time;
 public:
 	Course() : studentList(NULL), num(0), maxSize(0), name(""), place(""), time("") {}
@@ -62,6 +63,24 @@ public:
 	bool SetSize(int sz);
 
 	friend std::ostream& operator <<(std::ostream& out, Course &course);
+};
+
+class Student {
+private:
+	int num, maxSize;
+
+	// 存储学生所选课程所在bucket的索引的动态数组
+	unsigned short* courseList;
+	std::string name, NO;
+public:
+	Student() : courseList(NULL), num(0), maxSize(0), name(""), NO("") {}
+	Student& operator=(const Student& s);
+	Student(std::string name, std::string NO)
+		: name(name), NO(NO), courseList(NULL), num(0), maxSize(0) {}
+
+	// 调整动态数组容量，以8字节为单位
+	bool SetSize(bool broaden = true);
+
 };
 
 // 返回不大于bucket的最大素数，用于求哈希函数的余数

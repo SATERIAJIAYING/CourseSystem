@@ -4,7 +4,10 @@
 #include <ctime>
 
 // 参数设置
+// 课程哈希表的bucket容量，应小于65535 
 #define COURSE_BUCKET 2000
+// 学生哈希表的bucket容量，容量不限
+#define STUDENT_BUCKET 20000
 
 // 检查内存是否泄漏
 #ifdef _DEBUG
@@ -175,10 +178,6 @@ Course& Course::operator=(const Course& c)
 	{
 		studentList[i] = c.studentList[i];
 	}
-	for (i; i < c.maxSize; i++)
-	{
-		studentList[i] = 0;
-	}
 	return *this;
 }
 
@@ -190,10 +189,6 @@ Course::Course(std::string name, std::string place, std::string time, int maxSiz
 	{
 		std::cerr << "分配内存失败！\n";
 		exit(1);
-	}
-	for (int i = 0; i < maxSize; i++)
-	{
-		studentList[i] = 0;
 	}
 }
 
@@ -289,13 +284,58 @@ std::ostream& operator <<(std::ostream& out, Course &course)
 }
 
 
+//////////////////////////Student//////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Student& Student::operator=(const Student& s)
+{
+	name = s.name;
+	NO = s.NO;
+	num = 0;
+	maxSize = 4;
+	courseList = new unsigned short[maxSize];
+	if (courseList == NULL)
+	{
+		std::cerr << "分配内存失败！\n";
+		exit(1);
+	}
+	return *this;
+}
+
+bool Student::SetSize(bool broaden)
+{
+	if (broaden == false && maxSize - 4 < num)
+		return false;
+	maxSize += broaden ? 4 : (-4);
+	unsigned short *temp = courseList;
+	courseList = NULL;
+	courseList = new unsigned short[maxSize];
+	if (courseList == NULL)
+	{
+		std::cerr << "内存分配错误！\n";
+		exit(1);
+	}
+	for (int i = 0; i < num; i++)
+	{
+		courseList[i] = temp[i];
+	}
+	delete[]temp;
+	return true;
+}
+
+
+//////////////////////////Test///Other/////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 int Divisor(int bucket)
 {
 	for (int i = bucket; i >= 2; i--)
 	{
 		bool isPrime = true;
-		for (int j = 2; j <= sqrt(i); j++) {
-			if (i % j == 0) {
+		for (int j = 2; j <= sqrt(i); j++) 
+		{
+			if (i % j == 0) 
+			{
 				isPrime = false;
 				break;
 			}
@@ -305,9 +345,6 @@ int Divisor(int bucket)
 	}
 }
 
-
-//////////////////////////Test///Main//////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void test1()
 {

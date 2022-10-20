@@ -8,7 +8,7 @@
 
 // 检查内存是否泄漏
 #ifdef _DEBUG
-#define DEBUG_CLIENTBLOCK   new( _CLIENT_BLOCK, __FILE__, __LINE__)
+#define DEBUG_CLIENTBLOCK new( _CLIENT_BLOCK, __FILE__, __LINE__)
 #else
 #define DEBUG_CLIENTBLOCK
 #endif
@@ -19,7 +19,7 @@
 #endif
 
 // 测试的宏定义
-static int main_ret = 0, test_pass = 0, test_count = 0;   
+static int main_ret = 0, test_pass = 0, test_count = 0, test_NO = 0;
 static clock_t startTime, endTime;
 #define TEST(actual, expect)\
 	do{\
@@ -36,14 +36,15 @@ static clock_t startTime, endTime;
 #define START_TEST()\
 	do{\
 		test_pass = test_count = 0;\
-		std::cout << "测试名称：" << __FUNCTION__ << "\n\n";\
+		test_NO++;\
+		std::cout << "#### START_TEST " << test_NO << " ####\n测试名称：" << __FUNCTION__ << "\n\n";\
 		startTime = clock();\
 	}while(0)
 
 #define END_TEST()\
 	do{\
 		endTime = clock();\
-		std::cout << "\n测试用时： " <<(float)(endTime - startTime) / CLOCKS_PER_SEC << "s\n";\
+		std::cout << "\n#### END_TEST " << test_NO << " ####\n测试用时： " <<(float)(endTime - startTime) / CLOCKS_PER_SEC << "s\n";\
 		std::cout << test_pass << "/" << test_count << " （" << test_pass * 100.0 / test_count << "%） Pass" << "\n\n";\
 	}while(0)
 
@@ -65,8 +66,6 @@ template<class T> HashTable<T>::HashTable(int divisor, int sz)
 	}
 }
 
-// 根据key返回对应的bucket索引号和匹配元素的地址
-// 如果没有找到对应元素p返回空指针
 template<class T> int HashTable<T>::Hash(unsigned k, ChainNode<T> *&p) 
 {
 	unsigned i = k % divisor;
@@ -77,7 +76,6 @@ template<class T> int HashTable<T>::Hash(unsigned k, ChainNode<T> *&p)
 	return i;
 }
 
-// 根据key在表中找到相应的元素，如果找到了返回false，找不到则插入且返回true
 template<class T> bool HashTable<T>::Insert(unsigned k, const T& el)
 {
 	ChainNode<T>* p, * s;
@@ -103,7 +101,6 @@ template<class T> bool HashTable<T>::Search(unsigned k)
 	return p != NULL;
 }
 
-// 根据key在表中找到相应的元素，如果找不到返回false，找到则删除且返回true
 template<class T> bool HashTable<T>::Remove(unsigned k) 
 {
 	ChainNode<T>* p, * s;
@@ -128,7 +125,6 @@ template<class T> bool HashTable<T>::Remove(unsigned k)
 	}
 }
 
-// 调用该函数前须调用Search(k)来保证对应元素存在
 template<class T> ChainNode<T>& HashTable<T>::Find(unsigned k) 
 {
 	ChainNode<T>* p;
@@ -240,7 +236,6 @@ bool Course::RemStudent(unsigned studentId)
 	return true;
 }
 
-// 折半查找，返回元素的索引，如找不到返回-1
 int Course::Search(unsigned studentId)
 { 
 	if (num == 0)
@@ -261,6 +256,29 @@ int Course::Search(unsigned studentId)
 	return -1;
 }
 
+bool Course::SetSize(int sz)
+{
+	if (sz < num || sz == maxSize)
+	{
+		return false;
+	}
+	unsigned* temp = studentList;
+	studentList = NULL;
+	studentList = new unsigned[sz];
+	if (studentList == NULL)
+	{
+		std::cerr << "内存分配错误！\n";
+		exit(1);
+	}
+	for (int i = 0; i < num; i++)
+	{
+		studentList[i] = temp[i];
+	}
+	maxSize = sz;
+	delete[]temp;
+	return true;
+}
+
 std::ostream& operator <<(std::ostream& out, Course &course)
 {
 	out << "课程名称: " << course.name << '\n';
@@ -270,8 +288,7 @@ std::ostream& operator <<(std::ostream& out, Course &course)
 	return out;
 }
 
-// 返回不大于bucket的最大素数
-// 用于求哈希函数的余数
+
 int Divisor(int bucket)
 {
 	for (int i = bucket; i >= 2; i--)
@@ -291,7 +308,6 @@ int Divisor(int bucket)
 
 //////////////////////////Test///Main//////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 void test1()
 {
@@ -316,8 +332,8 @@ void test1()
 	{  // 为某个课程添加学生
 		TEST(clist.Find(11111111).data.AddStudent(i + 1000000), true);
 	}
-	// 显示所有课程
-	clist.PrintHashTable();
+	// 查找某个课程并显示信息
+	std::cout << clist.Find(11111111).data << std::endl;
 	END_TEST();
 
 	START_TEST();
@@ -325,7 +341,7 @@ void test1()
 	{ // 为某个课程删除学生
 		TEST(clist.Find(11111111).data.RemStudent(i + 1000000), true);
 	}
-	clist.PrintHashTable();
+	std::cout << clist.Find(11111111).data << std::endl;
 	END_TEST();
 
 	START_TEST();
@@ -334,8 +350,16 @@ void test1()
 	TEST(clist.Search(11111111), true);
 	std::cout << clist.Find(11111111).data << std::endl;
 	// 移除某个课程
-	TEST(clist.Remove(11111111), true);
+	TEST(clist.Remove(11111509), true);
 	clist.PrintHashTable();
+	END_TEST();
+
+	START_TEST();
+	// 修改课程的学生容量
+	TEST(clist.Find(11111111).data.SetSize(40), false);
+	std::cout << clist.Find(11111111).data << std::endl;
+	TEST(clist.Find(11111111).data.SetSize(90), true);
+	std::cout << clist.Find(11111111).data << std::endl;
 	END_TEST();
 }
 

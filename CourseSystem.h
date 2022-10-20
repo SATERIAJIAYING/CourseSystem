@@ -1,6 +1,7 @@
 #pragma once
 
 template<class T> struct ChainNode {
+	// 分别对应课程和学生的id
 	unsigned key;
 	ChainNode<T>* link;
 	T data;	
@@ -9,7 +10,9 @@ template<class T> struct ChainNode {
 
 template<class T> class HashTable {
 private:
-	int divisor, currentSize, tableSize;
+	// 哈希函数中的余数
+	int divisor;
+	int currentSize, tableSize;
 	ChainNode<T>** bucket;
 
 	// 根据key返回对应的bucket索引号和匹配元素的地址，如果没有找到对应元素p返回空指针
@@ -20,6 +23,8 @@ public:
 
 	// 根据key在表中找到相应的元素，如果找到了返回false，找不到则插入且返回true
 	bool Insert(unsigned k, const T& el);
+
+	// 根据key搜索对应元素是否在表中
 	bool Search(unsigned k); 
 
 	// 根据key在表中找到相应的元素，如果找不到返回false，找到则删除且返回true
@@ -27,11 +32,14 @@ public:
 
 	// 调用该函数前须调用Search(k)来保证对应元素存在
 	ChainNode<T>& Find(unsigned k);
+
+	// 显示所有表中元素
 	void PrintHashTable();
 };
 
 class Course {
 private:
+	// 存储选课学生id动态数组
 	unsigned* studentList;
 	int num, maxSize;
 	std::string name, place, time;
@@ -41,7 +49,10 @@ public:
 	Course(std::string name, std::string place, std::string time, int maxSize);
 	~Course();
 
+	// 添加学生
 	bool AddStudent(unsigned studentId);
+
+	// 移除学生
 	bool RemStudent(unsigned studentId);
 
 	// 查找学生，返回元素的索引，如找不到返回-1

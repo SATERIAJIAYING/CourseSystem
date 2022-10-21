@@ -4,6 +4,8 @@ template<class T> struct ChainNode {
 	// 分别对应课程和学生的id
 	unsigned key;
 	ChainNode<T>* link;
+
+	// 对应每个课程或者学生的信息
 	T data;	
 	ChainNode<T>() : key(0), link(NULL) {}
 };
@@ -19,7 +21,7 @@ private:
 	int Hash(unsigned k, ChainNode<T>*& p);
 public:
 	HashTable<T>(int divisor, int sz);
-	~HashTable<T>() { delete[]bucket; }
+	~HashTable<T>();
 
 	// 根据key在表中找到相应的元素，如果找到了返回false，找不到则插入且返回true
 	bool Insert(unsigned k, const T& el);
@@ -77,6 +79,7 @@ public:
 	Student& operator=(const Student& s);
 	Student(std::string name, std::string NO)
 		: name(name), NO(NO), courseList(NULL), num(0), maxSize(0) {}
+	~Student();
 
 	// 调整动态数组容量，以8字节为单位
 	bool SetSize(bool broaden = true);

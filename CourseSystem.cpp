@@ -4,7 +4,7 @@
 #include <ctime>
 
 // 参数设置
-// 课程哈希表的bucket容量，应小于65535 
+// 课程哈希表的bucket容量，应小于65535(unsigned short的范围)
 #define COURSE_BUCKET 2000
 // 学生哈希表的bucket容量，容量不限
 #define STUDENT_BUCKET 20000
@@ -67,6 +67,20 @@ template<class T> HashTable<T>::HashTable(int divisor, int sz)
 	{
 		bucket[i] = NULL;
 	}
+}
+
+template<class T> HashTable<T>::~HashTable<T>()
+{
+	for (int i = 0; i < tableSize; i++)
+	{
+		if (bucket[i])
+			for (ChainNode<T>* p = bucket[i]; p; p = bucket[i])
+			{
+				bucket[i] = p->link;
+				delete p;
+			}
+	}
+	delete[]bucket; 
 }
 
 template<class T> int HashTable<T>::Hash(unsigned k, ChainNode<T> *&p) 
@@ -302,6 +316,15 @@ Student& Student::operator=(const Student& s)
 	return *this;
 }
 
+Student::~Student()
+{
+	if (courseList)
+	{
+		delete[]courseList;
+		courseList = NULL;
+	}
+}
+
 bool Student::SetSize(bool broaden)
 {
 	if (broaden == false && maxSize - 4 < num)
@@ -510,6 +533,6 @@ int main()
 {
 	//test1();
 	test2();
-	_CrtDumpMemoryLeaks();
+	_CrtDumpMemoryLeaks();  // 检测内存是否泄漏
 	return 0;
 }

@@ -140,7 +140,7 @@ template<class T> ChainNode<T>& HashTable<T>::Find(unsigned k)
 template<class T> void HashTable<T>::PrintHashTable()
 {
 	int print_count = 0;
-	std::cout << "//////////////////////////////////////////////\n课程信息一览：\n";
+	std::cout << "//////////////////////////////////////////////\n信息一览：\n\n";
 	for (int i = 0; i < tableSize; i++)
 	{
 		if (bucket[i])
@@ -152,7 +152,7 @@ template<class T> void HashTable<T>::PrintHashTable()
 			}
 		}
 	}
-	std::cout << "总共有" << print_count << "个课程信息。\n//////////////////////////////////////////////\n";
+	std::cout << "总共有" << print_count << "个信息。\n//////////////////////////////////////////////\n";
 }
 
 
@@ -323,6 +323,66 @@ bool Student::SetSize(bool broaden)
 	return true;
 }
 
+bool Student::AddCourseBucket(unsigned short courseBucketIndex)
+{
+	if (maxSize == num)
+		SetSize(true);
+	int i;
+	for (i = 0; i < num; i++) // 升序插入
+	{
+		if (courseList[i] == courseBucketIndex)
+			return false;
+		if (courseList[i] > courseBucketIndex)
+			break;
+	}
+	for (int j = num; j > i; j--)
+		courseList[j] = courseList[j - 1];
+	courseList[i] = courseBucketIndex;
+	num++;
+	return true;
+}
+
+bool Student::RemCourseBucket(unsigned short courseBucketIndex)
+{
+	int i = Search(courseBucketIndex);
+	if (i < 0)
+		return false;
+	if (num < maxSize - 5)
+		SetSize(false);
+	for (int j = i; j < num - 1; j++)
+		courseList[j] = courseList[j + 1];
+	num--;
+	return true;
+}
+
+
+int Student::Search(unsigned short courseBucketIndex)
+{
+	if (num == 0)
+		return -1;
+	int low = 0, high = num - 1, mid;
+	while (low <= high) {   //折半查找
+		mid = (low + high) / 2;
+		if (courseBucketIndex == courseList[mid]) {
+			return mid;
+		}
+		else if (courseBucketIndex < courseList[mid]) {
+			high = mid - 1;
+		}
+		else {
+			low = mid + 1;
+		}
+	}
+	return -1;
+}
+
+std::ostream& operator <<(std::ostream& out, Student& student)
+{
+	out << "学生名字: " << student.name << '\n';
+	out << "学号: " << student.NO << '\n';
+	out << "Bucket数组: " << student.num << " / " << student.maxSize << '\n';
+	return out;
+}
 
 //////////////////////////Test///Other/////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -363,7 +423,7 @@ void test1()
 	END_TEST();
 
 	START_TEST();
-	
+	// 搜索某个课程，查看是否存在
 	TEST(clist.Search(11111111), true);
 	for (int i = 0; i < 80; i++)
 	{  // 为某个课程添加学生
@@ -400,10 +460,56 @@ void test1()
 	END_TEST();
 }
 
+void test2()
+{
+	START_TEST();
+	// 构造保存学生信息的哈希表
+	HashTable<Student> clist(Divisor(STUDENT_BUCKET), STUDENT_BUCKET);
+	// 添加学生信息
+	// Student构造函数： Student(std::string name, std::string NO);
+	TEST(clist.Insert(15564546, Student("王朝兴", "11320111")), true);
+	TEST(clist.Insert(13124121, Student("张三", "11320154")), true);
+	TEST(clist.Insert(36323543, Student("李四", "TJ210104")), true);
+	TEST(clist.Insert(11111509, Student("王五", "D1120524")), true);
+	TEST(clist.Insert(11111111, Student("赵六", "S1120213")), true);
+	TEST(clist.Insert(11111310, Student("古尔丹", "11119123")), true);
+	clist.PrintHashTable();
+	END_TEST();
+
+	START_TEST();
+	// 搜索某个学生，查看是否存在
+	TEST(clist.Search(11111111), true);
+	for (int i = 0; i < 80; i++)
+	{  // 为某个学生添加课程的bucket索引
+		TEST(clist.Find(11111111).data.AddCourseBucket(i + 100), true);
+	}
+	// 查找某个学生并显示信息
+	std::cout << clist.Find(11111111).data << std::endl;
+	END_TEST();
+
+	START_TEST();
+	for (int i = 60; i < 80; i++)
+	{ // 为某个学生删除课程的bucket索引
+		TEST(clist.Find(11111111).data.RemCourseBucket(i + 100), true);
+	}
+	std::cout << clist.Find(11111111).data << std::endl;
+	END_TEST();
+
+	START_TEST();
+	// 查找某个学生并显示信息
+	TEST(clist.Search(1111111), false);
+	TEST(clist.Search(11111111), true);
+	std::cout << clist.Find(11111111).data << std::endl;
+	// 移除某个学生
+	TEST(clist.Remove(11111509), true);
+	clist.PrintHashTable();
+	END_TEST();
+}
 
 int main()
 {
-	test1();
+	//test1();
+	test2();
 	_CrtDumpMemoryLeaks();
 	return 0;
 }

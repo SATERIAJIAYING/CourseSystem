@@ -56,7 +56,7 @@ public:
 	// 移除学生
 	bool RemStudent(unsigned studentId);
 
-	// 查找学生，返回元素的索引，如找不到返回-1
+	// 查找学生，返回bucket的索引，如找不到返回-1
 	int Search(unsigned studentId);
 
 	// 更改学生容量，如果之前已经选该课的学生数大于新的课容量，学生容量不会更改并返回false
@@ -81,6 +81,16 @@ public:
 	// 调整动态数组容量，以8字节为单位
 	bool SetSize(bool broaden = true);
 
+	// 添加课程bucket索引号
+	bool AddCourseBucket(unsigned short courseBucketIndex);
+
+	// 移除课程bucket索引号
+	bool RemCourseBucket(unsigned short courseBucketIndex);
+
+	// 查找课程存放的位置，返回课程对应bucket的索引，如找不到返回-1
+	int Search(unsigned short courseBucketIndex);
+
+	friend std::ostream& operator <<(std::ostream& out, Student& student);
 };
 
 // 返回不大于bucket的最大素数，用于求哈希函数的余数
@@ -88,3 +98,6 @@ int Divisor(int bucket);
 
 // 和课程哈希表有关的测试
 void test1();
+
+// 和学生哈希表有关的测试
+void test2();

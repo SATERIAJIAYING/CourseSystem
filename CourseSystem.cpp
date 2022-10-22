@@ -4,6 +4,11 @@
 #include <sstream>
 #include "CourseSystem.h"
 
+#define CLS (system("cls"))
+#define PAUSE (system("pause"))
+// 移除输入流缓冲区中的换行
+#define REM_ENTER (std::cin.ignore(1000, '\n')) 
+
 // 参数设置
 // 课程哈希表的bucket容量，应小于65535(unsigned short的范围)
 #define COURSE_BUCKET 2000
@@ -152,22 +157,33 @@ template<class T> ChainNode<T>& HashTable<T>::Find(unsigned k)
 	return *p;
 }
 
-template<class T> void HashTable<T>::PrintHashTable()
+template<class T> void HashTable<T>::PrintHashTable(int n)
 {
 	int print_count = 0;
-	std::cout << "//////////////////////////////////////////////\n信息一览：\n\n";
+	std::cout << "//////////////////////////////////////////////\n";
+	if (n)
+		std::cout << "第" << n << "页结果：\n\n";
+	else
+		std::cout << "信息一览：\n\n";
 	for (int i = 0; i < tableSize; i++)
 	{
 		if (bucket[i])
 		{
 			for (ChainNode<T>* p = bucket[i]; p; p = p->link)
 			{ 
-				std::cout << "Key:\t" << p->key << '\n' << p->data << "\n\n";	
 				print_count++;
+				if ((!n) || (n && print_count > (n - 1) * 5 && print_count <= n * 5))
+					std::cout << "Key:\t" << p->key << '\n' << p->data << "\n\n";
+				if (n && print_count > n * 5)
+					break;
 			}
 		}
+		if (n && print_count > n * 5)
+			break;
 	}
-	std::cout << "总共有" << print_count << "个信息。\n//////////////////////////////////////////////\n";
+	if(!n)
+		std::cout << "总共有" << print_count << "个信息。";
+	std::cout << "\n//////////////////////////////////////////////" << std::endl;
 }
 
 
@@ -409,7 +425,7 @@ std::ostream& operator <<(std::ostream& out, Student& student)
 }
 
 
-//////////////////////////CourseSystem和其他相关的类//////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////AnalyzedTime类///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 AnalyzedTime::AnalyzedTime()
@@ -572,6 +588,177 @@ bool AnalyzedTime::SetTime(const std::string strTime, bool add)
 	return true;
 }
 
+//////////////////////////CourseSystem/////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+void CourseSystem::RemStudentFromCourses(unsigned key)
+{
+	//TODO:首先完成这两个函数
+}
+
+void CourseSystem::RemCoursesFromStudent(unsigned key)
+{
+	//TODO:首先完成这两个函数
+}
+
+void CourseSystem::PrintInfo(bool isCourse)
+{
+	int n;
+	ResetIStrm();
+	CLS;
+	if (isCourse)
+		std::cout << "显示课程信息：\n请选择显示所有课程(0)还是显示第n页(n)：";
+	else
+		std::cout << "显示学生信息：\n请选择显示所有学生(0)还是显示第n页(n)：";
+	if (std::cin >> n)
+	{
+		if (isCourse)
+			courseList.PrintHashTable(n);
+		else
+			studentList.PrintHashTable(n);
+		PAUSE;
+		return;
+	}
+	else
+	{
+		std::cout << "输入错误！" << std::endl;
+		PAUSE;
+		return;
+	}
+}
+
+void CourseSystem::AddCourse()
+{
+	unsigned key;
+	int maxSize;
+	std::string name, place, time;
+	AnalyzedTime t;
+	CLS;
+	ResetIStrm();
+	std::cout << "添加课程：\n请依次输入课程的Key号（最多9位）、课程名称、授课地点和课程的最大容量：" << std::endl;
+	if (std::cin >> key >> name >> place >> maxSize)
+	{
+		if (courseList.Search(key))
+		{
+			std::cout << "已经存在相同Key的课程！" << std::endl;
+			PAUSE;
+			return;
+		}
+		std::cout << "请输入课程时间：\n" << "\t输入示例：\n" <<
+			"\t\tWeeks1-16 Thu Classes1-3\n" <<
+			"\t\tWeeks1-16 Thu Classes1-3 Sun Classes1-5 Tue Classes3\n" <<
+			"\t\tWeeks1-16 Thu Classes1-3 Sun Classes1-5 Tue Classes3 Classes11-13\n" <<
+			"\t\tWeeks1-16 Thu Classes1-3 Sun Classes1-5 Tue Classes3 Classes11-13 Weeks4-8 Sat Classes2-3" << std::endl;
+		REM_ENTER;
+		if (std::cin, getline(std::cin, time))
+		{
+			if (t.SetTime(time, false)) //判断输入时间是否合法
+			{
+				if (courseList.Insert(key, Course(name, place, time, maxSize)))
+				{
+					std::cout << "添加课程成功！" << std::endl;
+					PAUSE;
+					return;
+				}
+				else
+				{
+					std::cout << "添加课程失败！" << std::endl;
+					PAUSE;
+					return;
+				}
+			}
+			else
+			{
+				std::cout << "输入时间非法！" << std::endl;
+				PAUSE;
+				return;
+			}
+		}
+		std::cout << "输入错误！" << std::endl;
+		PAUSE;
+		return;
+	}
+	std::cout << "输入错误！" << std::endl;
+	PAUSE;
+	return;
+}
+
+void CourseSystem::AddStudent()
+{
+	// TODO
+}
+
+void CourseSystem::SearchCourse()
+{
+	unsigned key;
+	CLS;
+	ResetIStrm();
+	std::cout << "查询课程信息：\n请输入要查询的课程的Key：";
+	if (std::cin >> key)
+	{
+		if (courseList.Search(key))
+		{
+			std::cout << "查询结果：\n" << courseList.Find(key).data << std::endl;
+			PAUSE;
+			return;
+		}
+		else
+		{
+			std::cout << "课程不存在！" << std::endl;
+			PAUSE;
+			return;
+		}
+	}
+	std::cout << "输入错误！" << std::endl;
+	PAUSE;
+	return;
+}
+
+void CourseSystem::RemInfo(bool isCourse) // TODO:将函数补充为支持删除学生
+{
+	unsigned key;
+	CLS;
+	ResetIStrm();
+	std::cout << "删除课程信息：\n请输入要删除的课程的Key：";
+	if (std::cin >> key)
+	{
+		if (courseList.Search(key))
+		{
+			std::cout << "查询结果：\n" << courseList.Find(key).data << std::endl;
+			bool del;
+			std::cout << "是(1)否(0)删除该课程：";
+			if (std::cin >> del)
+			{
+				if (del)
+				{
+					// TODO:先删除选了这门课的学生的选课，再删除这门课的数据
+				}
+				else
+				{
+					PAUSE;
+					return;
+				}
+			}
+			else
+			{
+				std::cout << "输入错误！" << std::endl;
+				PAUSE;
+				return;
+			}
+		}
+		else
+		{
+			std::cout << "课程不存在！" << std::endl;
+			PAUSE;
+			return;
+		}
+	}
+	std::cout << "输入错误！" << std::endl;
+	PAUSE;
+	return;
+}
+
 //////////////////////////Test///Other/////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -593,6 +780,15 @@ int Divisor(int bucket)
 	}
 }
 
+void ResetIStrm()
+{
+	if (std::cin.rdstate())
+	{
+		std::cin.clear();
+		std::cin.ignore(1000, '\n');
+	}
+}
+
 
 void test1()
 {
@@ -607,7 +803,9 @@ void test1()
 	TEST(clist.Insert(11111509, Course("Python", "中山院403", "1-16周 周二 6-7节", 30)), true);
 	TEST(clist.Insert(11111111, Course("数据结构", "东南院204", "1-16周 周一 4-5节", 100)), true);
 	TEST(clist.Insert(11111310, Course("形势与政策", "礼东102", "1-16周 周二 11-12节", 200)), true);
-	clist.PrintHashTable();
+	clist.PrintHashTable(1);
+	clist.PrintHashTable(2);
+	clist.PrintHashTable(3);
 	END_TEST();
 
 	START_TEST();
@@ -727,11 +925,20 @@ void test3()
 	END_TEST();
 }
 
+void test4()
+{
+	CourseSystem cSys(COURSE_BUCKET, STUDENT_BUCKET);
+	cSys.AddCourse();
+	cSys.PrintInfo();
+	cSys.SearchCourse();
+}
+
 int main()
 {
 	//test1();
 	//test2();
-	test3();
+	//test3();
+	test4();
 	_CrtDumpMemoryLeaks();  // 检测内存是否泄漏
 	return 0;
 }

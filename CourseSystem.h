@@ -11,6 +11,7 @@ template<class T> struct ChainNode {
 };
 
 template<class T> class HashTable {
+	friend class CourseSystem;
 private:
 	// 哈希函数中的余数
 	int divisor;
@@ -36,9 +37,11 @@ public:
 	ChainNode<T>& Find(unsigned k);
 
 	// 显示所有表中元素
-	void PrintHashTable();
+	// 如果n=0直接显示所有结果；n不为0则以5个元素为一页，显示第n页结果
+	void PrintHashTable(int n = 0);
 };
 
+// 哈希表中的课程信息
 class Course {
 private:
 	int num, maxSize;
@@ -67,6 +70,7 @@ public:
 	friend std::ostream& operator <<(std::ostream& out, Course &course);
 };
 
+// 哈希表中的学生信息
 class Student {
 private:
 	int num, maxSize;
@@ -99,21 +103,12 @@ public:
 // 返回不大于bucket的最大素数，用于求哈希函数的余数
 int Divisor(int bucket);
 
-class CourseSystem {
-private:
-	HashTable<Course> courseList;
-	HashTable<Student> StudentList;
-public:
-	CourseSystem(int courseBucket, int studentBucket)
-		: courseList(Divisor(courseBucket), courseBucket), StudentList(Divisor(studentBucket), studentBucket) {}
-};
-
 // 被解析后的时间类
 //     std::string保存时间的格式示例：
-//     "Weeks1-16 Mon Classes1-3" 
-//     "Weeks1-16 Mon Classes1-3 Sun Classes1-5 Tue Classes3"
-//     "Weeks1-16 Mon Classes1-3 Sun Classes1-5 Tue Classes3 Classes11-13" 
-//     "Weeks1-16 Mon Classes1-3 Sun Classes1-5 Tue Classes3 Classes11-13 Weeks4-8 Sat Classes2-3"
+//     "Weeks1-16 Thu Classes1-3" 
+//     "Weeks1-16 Thu Classes1-3 Sun Classes1-5 Tue Classes3"
+//     "Weeks1-16 Thu Classes1-3 Sun Classes1-5 Tue Classes3 Classes11-13" 
+//     "Weeks1-16 Thu Classes1-3 Sun Classes1-5 Tue Classes3 Classes11-13 Weeks4-8 Sat Classes2-3"
 class AnalyzedTime {
 private:
 	// 16周，7天，每位代表1节课，每天最多13节课
@@ -131,11 +126,52 @@ public:
 	// 清空时间，bool[][][]置false
 	void ClearTime();
 
-	// 添加或者移除时间，解析保存在字符串中的时间信息，若字符串非法则返回false
+	// 添加或者移除时间，解析保存在字符串中的时间信息，也可以判断字符串是否合法
 	bool SetTime(const std::string strTime, bool add = true);
 };
 
+// ─┬ PrintInfo(学生)
+//   ├ PrintInfo(课程)
+//   ├ SearchCourse
+//   ├ StudentPick
+//   ├ Add/RemInfo ───┬ AddCourse 
+//   │                   ├ AddStudent
+//   │                   └ RemInfo ───┬ RemStudentFromCourses
+//   │                                    └ RemCoursesFromStudent
+//   └ 读写文件
+// 连系两个哈希表，封装用户交互的最顶层的类
+class CourseSystem {
+private:
+	HashTable<Course> courseList;
+	HashTable<Student> studentList;
+public:
+	CourseSystem(int courseBucket, int studentBucket)
+		: courseList(Divisor(courseBucket), courseBucket), 
+		studentList(Divisor(studentBucket), studentBucket) {}
 
+	// 删除学生哈希表中的相应课程的信息
+	void RemStudentFromCourses(unsigned key);
+	// 删除课程哈希表中的相应学生的信息
+	void RemCoursesFromStudent(unsigned key);
+
+	// 显示所有课程/学生信息
+	void PrintInfo(bool isCourse = true);
+
+	// 添加课程信息，从选课系统界面输入
+	void AddCourse();
+
+	// 添加学生信息，从选课系统界面输入
+	void AddStudent();
+
+	// 查询课程信息
+	void SearchCourse();
+
+	// 删除课程/学生信息
+	void RemInfo(bool isCourse = true);
+};
+
+// 重置输入流状态，清空缓冲区
+void ResetIStrm();
 
 // 和课程哈希表有关的测试
 void test1();
@@ -145,3 +181,5 @@ void test2();
 
 // 和时间解析相关的测试
 void test3();
+
+void test4();

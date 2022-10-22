@@ -1,7 +1,8 @@
 #include <iostream>
 #include <string>
-#include "CourseSystem.h"
 #include <ctime>
+#include <sstream>
+#include "CourseSystem.h"
 
 // 参数设置
 // 课程哈希表的bucket容量，应小于65535(unsigned short的范围)
@@ -21,7 +22,7 @@
 #define new DEBUG_CLIENTBLOCK
 #endif
 
-// 测试的宏定义
+// 单元测试的宏定义
 static int main_ret = 0, test_pass = 0, test_count = 0, test_NO = 0;
 static clock_t startTime, endTime;
 #define TEST(actual, expect)\
@@ -31,7 +32,7 @@ static clock_t startTime, endTime;
 		if((expect) == temp)\
 			test_pass++;\
 		else{\
-			std::cout << __FILE__ << " Line: " << __LINE__ << ": Expect:" << (expect) << " Actual:" << temp << std::endl;\
+			std::cerr << __FILE__ << " Line: " << __LINE__ << ": Expect:" << (expect) << " Actual:" << temp << std::endl;\
 			main_ret = 1;\
 		}\
 	}while(0)
@@ -407,6 +408,170 @@ std::ostream& operator <<(std::ostream& out, Student& student)
 	return out;
 }
 
+
+//////////////////////////CourseSystem和其他相关的类//////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+AnalyzedTime::AnalyzedTime()
+{
+	ClearTime();
+}
+
+AnalyzedTime& AnalyzedTime::operator =(const AnalyzedTime& t)
+{
+	for (int i = 0; i < 16; i++)
+		for (int j = 0; j < 7; j++)
+			for (int k = 0; k < 13; k++)
+				time[i][j][k] = t.time[i][j][k];
+	return *this;
+}
+
+bool AnalyzedTime::operator ==(const AnalyzedTime& t)
+{
+	for (int i = 0; i < 16; i++)
+		for (int j = 0; j < 7; j++)
+			for (int k = 0; k < 13; k++)
+				if (time[i][j][k] != t.time[i][j][k])
+					return false;
+	return true;
+}
+
+AnalyzedTime& AnalyzedTime::operator +=(const AnalyzedTime& t)
+{
+	for (int i = 0; i < 16; i++)
+		for (int j = 0; j < 7; j++)
+			for (int k = 0; k < 13; k++)
+				if (t.time[i][j][k])
+					time[i][j][k] = true;
+	return *this;
+}
+
+AnalyzedTime& AnalyzedTime::operator -=(const AnalyzedTime& t)
+{
+	for (int i = 0; i < 16; i++)
+		for (int j = 0; j < 7; j++)
+			for (int k = 0; k < 13; k++)
+				if (t.time[i][j][k])
+					time[i][j][k] = false;
+	return *this;
+}
+
+bool AnalyzedTime::IsConflict(const AnalyzedTime& t)
+{
+	for (int i = 0; i < 16; i++)
+		for (int j = 0; j < 7; j++)
+			for (int k = 0; k < 13; k++)
+				if (time[i][j][k] && t.time[i][j][k])
+					return true;
+	return false;
+}
+
+void AnalyzedTime::ClearTime()
+{
+	for (int i = 0; i < 16; i++)
+		for (int j = 0; j < 7; j++)
+			for (int k = 0; k < 13; k++)
+				time[i][j][k] = false;
+}
+
+bool AnalyzedTime::SetTime(const std::string strTime, bool add)
+{
+	std::string temp;
+	std::stringstream strStream(strTime);
+	int weekBegin = 0, day = 0, weekEnd, classBegin, classEnd;
+	char sep;
+	while (strStream >> temp)
+	{
+		if (temp.size() > 7 && temp.size() <= 12 && temp.substr(0, 7) == "Classes" 
+				&& weekBegin > 0 && day > 0) // temp中保存的是第几节课的信息，且之前已经得知了周次和星期几
+		{
+			temp = temp.substr(7, temp.length());
+			std::stringstream subStream(temp);
+			if (subStream >> classBegin)
+			{
+				if (classBegin < 1 || classBegin > 13)
+					return false;
+				if (subStream >> sep)
+				{
+					if (sep == '-')
+					{
+						if (subStream >> classEnd)  //  "Classess<int1>-<int2>"
+						{
+							if (!(1 <= classBegin && classBegin <= classEnd && classEnd <= 16))
+								return false; // <int2> 的合法性检查，条件不为true说明合法
+						}
+						else  // "Classess<int>-"  合法输入：第<int>到13节课
+							classEnd = 13;
+					}
+					else // "Classess<int>!" 非法输入
+						return false;
+				}
+				else   // "Classess<int>"  合法输入：第<int>节课
+					classEnd = classBegin;
+
+				// 在bool[][][]中修改课时
+				for (int week = weekBegin; week <= weekEnd; week++)
+					for (int clasS = classBegin; clasS <= classEnd; clasS++)
+						time[week - 1][day - 1][clasS - 1] = add;
+			}
+			else
+				return false;
+		}
+		else if (temp.size() > 5 && temp.size() <= 10 && temp.substr(0, 5) == "Weeks")
+			// temp中保存的是第几周的信息
+		{
+			temp = temp.substr(5, temp.length());
+			std::stringstream subStream(temp);
+			if (subStream >> weekBegin)
+			{
+				if (weekBegin < 1 || weekBegin > 16)
+					return false;
+				if (subStream >> sep)
+				{
+					if (sep == '-')
+					{
+						if (subStream >> weekEnd)  //  "Week<int1>-<int2>"
+						{
+							if (!(1 <= weekBegin && weekBegin <= weekEnd && weekEnd <= 16))
+								return false; // <int2> 的合法性检查，条件不为true说明合法
+						}
+						else  // "Week<int>-"  合法输入：第<int>到16周
+							weekEnd = 16;
+					}
+					else // "Week<int>!" 非法输入
+						return false;
+				}
+				else   // "Weeks<int>"  合法输入：第<int>周
+					weekEnd = weekBegin;
+			}
+			else
+				return false;
+		}
+		else if (temp.size() == 3) // temp中保存的是星期几的信息
+		{
+			if (temp == "Mon")
+				day = 1;
+			else if (temp == "Tue")
+				day = 2;
+			else if (temp == "Wed")
+				day = 3;
+			else if (temp == "Thu")
+				day = 4;
+			else if (temp == "Fri")
+				day = 5;
+			else if (temp == "Sat")
+				day = 6;
+			else if (temp == "Sun")
+				day = 7;
+			else
+				return false;
+		}
+		else
+			return false;
+	}
+	return true;
+}
+
 //////////////////////////Test///Other/////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -529,10 +694,44 @@ void test2()
 	END_TEST();
 }
 
+void test3()
+{
+	START_TEST();
+	CourseSystem cSys(COURSE_BUCKET, STUDENT_BUCKET);
+	AnalyzedTime t1, t2;
+	// 测试是否能判断字符串是否合法
+	TEST(t1.SetTime("Weeks1-16 Mon Classes1-3"), true);
+	TEST(t1.SetTime("Weeks1-16 Mon Classes1-3 Sun Classes1-5 Tue Classes3"), true);
+	TEST(t1.SetTime("Weeks1-16 Mon Classes1-3 Sun Classes1-5 Tue Classes3 Classes11-13"), true);
+	TEST(t1.SetTime("Weeks1-16 Mon Classes1-3"), true);
+	TEST(t1.SetTime("Classes1-3 Weeks1-16 Mon"), false);
+	TEST(t1.SetTime("Weeks16-1 Mon Classes1-3 "), false);
+	TEST(t1.SetTime(" Weeks1-16 Mon Classes3-"), true);
+	TEST(t1.SetTime("Mon Weeks1-16 Weeks2-8  Classes1-3"), true);
+	TEST(t1.SetTime(" Weeks1-16 Weeks2-8  Classes1-3 Mon"), false);
+	t1.ClearTime();
+	// 测试时间解析功能是否正常
+	TEST(t1.SetTime("Weeks1-16 Mon Classes4-5"), true);
+	TEST(t1.SetTime("Weeks1-16 Wed Classes2-3"), true);
+	TEST(t2.SetTime("Weeks1-16 Mon Classes4-5 Wed Classes2-3"), true);
+	TEST(t1 == t2, true);
+	AnalyzedTime t3, t4;
+	TEST(t3.SetTime("Weeks2-3 Mon Classes6-8"), true);
+	TEST(t3.SetTime("Weeks4-16 Fri Classes1-2"), true);
+	TEST(t3.SetTime("Weeks1-16 Tue Classes3-5"), true);
+	TEST(t4.SetTime("Weeks1-16 Tue Classes3-5 Weeks4-16 Fri Classes1-2 Weeks2-3 Mon Classes6-8"), true);
+	TEST(t3 == t4, true);
+	TEST(t3.IsConflict(t4), true);
+	TEST(t1.IsConflict(t2), true);
+	TEST(t1.IsConflict(t3), false);
+	END_TEST();
+}
+
 int main()
 {
 	//test1();
-	test2();
+	//test2();
+	test3();
 	_CrtDumpMemoryLeaks();  // 检测内存是否泄漏
 	return 0;
 }

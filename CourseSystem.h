@@ -99,8 +99,49 @@ public:
 // 返回不大于bucket的最大素数，用于求哈希函数的余数
 int Divisor(int bucket);
 
+class CourseSystem {
+private:
+	HashTable<Course> courseList;
+	HashTable<Student> StudentList;
+public:
+	CourseSystem(int courseBucket, int studentBucket)
+		: courseList(Divisor(courseBucket), courseBucket), StudentList(Divisor(studentBucket), studentBucket) {}
+};
+
+// 被解析后的时间类
+//     std::string保存时间的格式示例：
+//     "Weeks1-16 Mon Classes1-3" 
+//     "Weeks1-16 Mon Classes1-3 Sun Classes1-5 Tue Classes3"
+//     "Weeks1-16 Mon Classes1-3 Sun Classes1-5 Tue Classes3 Classes11-13" 
+//     "Weeks1-16 Mon Classes1-3 Sun Classes1-5 Tue Classes3 Classes11-13 Weeks4-8 Sat Classes2-3"
+class AnalyzedTime {
+private:
+	// 16周，7天，每位代表1节课，每天最多13节课
+	bool time[16][7][13];  
+public:
+	AnalyzedTime();
+	AnalyzedTime& operator =(const AnalyzedTime& t);
+	bool operator ==(const AnalyzedTime& t);
+	AnalyzedTime& operator +=(const AnalyzedTime& t);
+	AnalyzedTime& operator -=(const AnalyzedTime& t);
+
+	// 判断两个时间是否冲突
+	bool IsConflict(const AnalyzedTime& t);
+
+	// 清空时间，bool[][][]置false
+	void ClearTime();
+
+	// 添加或者移除时间，解析保存在字符串中的时间信息，若字符串非法则返回false
+	bool SetTime(const std::string strTime, bool add = true);
+};
+
+
+
 // 和课程哈希表有关的测试
 void test1();
 
 // 和学生哈希表有关的测试
 void test2();
+
+// 和时间解析相关的测试
+void test3();

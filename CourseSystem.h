@@ -43,7 +43,9 @@ public:
 
 // 哈希表中的课程信息
 class Course {
+	friend class CourseSystem;
 private:
+	// 课程中学生的数量
 	int num, maxSize;
 
 	// 存储选课学生id动态数组
@@ -72,7 +74,9 @@ public:
 
 // 哈希表中的学生信息
 class Student {
+	friend class CourseSystem;
 private:
+	// 学生中课程的数量
 	int num, maxSize;
 
 	// 存储学生所选课程所在bucket的索引的动态数组
@@ -149,10 +153,10 @@ public:
 		: courseList(Divisor(courseBucket), courseBucket), 
 		studentList(Divisor(studentBucket), studentBucket) {}
 
-	// 删除学生哈希表中的相应课程的信息
-	void RemStudentFromCourses(unsigned key);
-	// 删除课程哈希表中的相应学生的信息
-	void RemCoursesFromStudent(unsigned key);
+	// 删除课程哈希表中的相应学生的信息，用于删除学生前清除学生选课关系
+	void RemStudentFromCourses(unsigned studentKey);
+	// 删除学生哈希表中的相应课程的信息，用于删除课程前清除学生选课关系
+	void RemCoursesFromStudent(unsigned courseKey);
 
 	// 显示所有课程/学生信息
 	void PrintInfo(bool isCourse = true);

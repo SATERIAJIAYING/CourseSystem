@@ -418,9 +418,9 @@ int Student::Search(unsigned short courseBucketIndex)
 
 std::ostream& operator <<(std::ostream& out, Student& student)
 {
-	out << "学生名字: " << student.name << '\n';
-	out << "学号: " << student.NO << '\n';
-	out << "Bucket数组: " << student.num << " / " << student.maxSize << '\n';
+	out << "学生名字: \t" << student.name << '\t';
+	out << "学号: \t" << student.NO << '\n';
+	//out << "Bucket数组: " << student.num << " / " << student.maxSize << '\n';
 	return out;
 }
 
@@ -592,14 +592,42 @@ bool AnalyzedTime::SetTime(const std::string strTime, bool add)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-void CourseSystem::RemStudentFromCourses(unsigned key)
+void CourseSystem::RemStudentFromCourses(unsigned studentKey)
 {
-	//TODO:首先完成这两个函数
+	const Student& studentToDel = studentList.Find(studentKey).data;
+	unsigned short courseBucketIdx;
+	for (int i = 0; i < studentToDel.num; i++)
+	{
+		courseBucketIdx = studentToDel.courseList[i]; //学生存储的选课信息不是课程的Key，而是课程的Bucket索引
+		for (ChainNode<Course>* p = courseList.bucket[courseBucketIdx]; p; p = p->link)
+		{
+			p->data.RemStudent(studentKey);
+		}
+	}
 }
 
-void CourseSystem::RemCoursesFromStudent(unsigned key)
+void CourseSystem::RemCoursesFromStudent(unsigned courseKey)
 {
-	//TODO:首先完成这两个函数
+	ChainNode<Course>* pCourseToDel;
+	unsigned short courseBucketIdx = courseList.Hash(courseKey, pCourseToDel);
+	for (int i = 0; i < pCourseToDel->data.num; i++)
+	{
+		// 先找在课程哈希表中的相同bucket是否有待处理的学生选的课
+		bool otherCourseInSameBucket = false;
+		for (ChainNode<Course>* p = courseList.bucket[courseBucketIdx]; p; p = p->link)
+		{
+			if (pCourseToDel == p)
+				continue;
+			if (p->data.Search(pCourseToDel->key))
+			{
+				otherCourseInSameBucket = true;
+				break;
+			}
+		}
+		// 如果没有的话就删除该bucket的索引
+		if (otherCourseInSameBucket == false)
+			studentList.Find(pCourseToDel->data.studentList[i]).data.RemCourseBucket(courseBucketIdx);
+	}
 }
 
 void CourseSystem::PrintInfo(bool isCourse)
@@ -689,7 +717,7 @@ void CourseSystem::AddStudent()
 	// TODO
 }
 
-void CourseSystem::SearchCourse()
+void CourseSystem::SearchCourse()  // TODO: 添加显示选了这门课的学生
 {
 	unsigned key;
 	CLS;
@@ -720,19 +748,42 @@ void CourseSystem::RemInfo(bool isCourse) // TODO:将函数补充为支持删除学生
 	unsigned key;
 	CLS;
 	ResetIStrm();
-	std::cout << "删除课程信息：\n请输入要删除的课程的Key：";
+	const std::string object = isCourse ? "课程" : "学生";
+	std::cout << "从系统中删除" << object << "信息：\n请输入要删除的" << object << "的Key：";
 	if (std::cin >> key)
 	{
-		if (courseList.Search(key))
+		bool searchResult;
+		if (isCourse)
+			searchResult = courseList.Search(key);
+		else
+			searchResult = studentList.Search(key);
+		if (searchResult)
 		{
-			std::cout << "查询结果：\n" << courseList.Find(key).data << std::endl;
+			if (isCourse)
+				std::cout << "查询结果：\n" << courseList.Find(key).data << std::endl;
+			else
+				std::cout << "查询结果：\n" << studentList.Find(key).data << std::endl;
+			std::cout << "是(1)否(0)删除该" << object << "：";
 			bool del;
-			std::cout << "是(1)否(0)删除该课程：";
 			if (std::cin >> del)
 			{
 				if (del)
 				{
-					// TODO:先删除选了这门课的学生的选课，再删除这门课的数据
+					if (isCourse)
+					{
+						// 先删除选了这门课的学生对这门课的选课关系，再删除这门课的数据
+						RemCoursesFromStudent(key);
+						courseList.Remove(key);
+					}
+					else
+					{
+						// 先删除该学生选的所有课的选课关系，再删除这门课的数据
+						RemCoursesFromStudent(key);
+						courseList.Remove(key);
+					}
+					std::cout << "已从系统中移除该" << object << "！" << std::endl;
+					PAUSE;
+					return;
 				}
 				else
 				{
@@ -749,7 +800,7 @@ void CourseSystem::RemInfo(bool isCourse) // TODO:将函数补充为支持删除学生
 		}
 		else
 		{
-			std::cout << "课程不存在！" << std::endl;
+			std::cout << object << "不存在！" << std::endl;
 			PAUSE;
 			return;
 		}
@@ -929,8 +980,11 @@ void test4()
 {
 	CourseSystem cSys(COURSE_BUCKET, STUDENT_BUCKET);
 	cSys.AddCourse();
+	cSys.AddCourse();
 	cSys.PrintInfo();
-	cSys.SearchCourse();
+	//cSys.SearchCourse();
+	cSys.RemInfo();
+	cSys.PrintInfo();
 }
 
 int main()

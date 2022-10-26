@@ -6,11 +6,10 @@
 
 #define CLS (system("cls"))
 #define PAUSE (system("pause"))
-// 移除输入流缓冲区中的换行
 #define REM_ENTER (std::cin.ignore(1000, '\n')) 
 
 // 参数设置
-// 课程哈希表的bucket容量，应小于65535(unsigned short的范围)
+// 课程哈希表的bucket容量，应小于65535(unsigned short的范围)，对实际存储的课程数量没有上限
 #define COURSE_BUCKET 2000
 // 学生哈希表的bucket容量，容量不限
 #define STUDENT_BUCKET 20000
@@ -418,8 +417,8 @@ int Student::Search(unsigned short courseBucketIndex)
 
 std::ostream& operator <<(std::ostream& out, Student& student)
 {
-	out << "学生名字: \t" << student.name << '\t';
-	out << "学号: \t" << student.NO << '\n';
+	out << "学生名字： " << student.name << '\t';
+	out << "学号： " << student.NO << '\n';
 	//out << "Bucket数组: " << student.num << " / " << student.maxSize << '\n';
 	return out;
 }
@@ -606,7 +605,7 @@ void CourseSystem::RemStudentFromCourses(unsigned studentKey)
 	}
 }
 
-void CourseSystem::RemCoursesFromStudent(unsigned courseKey)
+void CourseSystem::RemCourseFromStudents(unsigned courseKey)
 {
 	ChainNode<Course>* pCourseToDel;
 	unsigned short courseBucketIdx = courseList.Hash(courseKey, pCourseToDel);
@@ -618,7 +617,7 @@ void CourseSystem::RemCoursesFromStudent(unsigned courseKey)
 		{
 			if (pCourseToDel == p)
 				continue;
-			if (p->data.Search(pCourseToDel->key))
+			if (p->data.Search(pCourseToDel->data.studentList[i]) != -1)
 			{
 				otherCourseInSameBucket = true;
 				break;
@@ -627,6 +626,74 @@ void CourseSystem::RemCoursesFromStudent(unsigned courseKey)
 		// 如果没有的话就删除该bucket的索引
 		if (otherCourseInSameBucket == false)
 			studentList.Find(pCourseToDel->data.studentList[i]).data.RemCourseBucket(courseBucketIdx);
+	}
+}
+
+AnalyzedTime CourseSystem::TotalTime(unsigned studentKey)
+{
+	const Student& studentToSearch = studentList.Find(studentKey).data;
+	AnalyzedTime totalTime;
+	unsigned short courseBucketIdx;
+	for (int i = 0; i < studentToSearch.num; i++)
+	{
+		courseBucketIdx = studentToSearch.courseList[i];
+		for (ChainNode<Course>* p = courseList.bucket[courseBucketIdx]; p; p = p->link)
+		{
+			if (p->data.Search(studentKey) != -1)
+				totalTime.SetTime(p->data.time);
+		}
+	}
+	return totalTime;
+}
+
+bool CourseSystem::PickCourseInTable(unsigned studentKey, unsigned courseKey)
+{
+	if (!courseList.Find(courseKey).data.AddStudent(studentKey))
+		return false;
+	ChainNode<Course>* temp;
+	unsigned short courseBucketIdx = courseList.Hash(courseKey, temp);
+	studentList.Find(studentKey).data.AddCourseBucket(courseBucketIdx);
+	return true;
+}
+
+bool CourseSystem::ExitCourseInTable(unsigned studentKey, unsigned courseKey)
+{
+	if (!courseList.Find(courseKey).data.RemStudent(studentKey))
+		return false;
+	ChainNode<Course>* courseNode;
+	unsigned short courseBucketIdx = courseList.Hash(courseKey, courseNode);
+	// 先找在课程哈希表中的相同bucket是否有待处理的学生选的课
+	bool otherCourseInSameBucket = false;
+	for (ChainNode<Course>* p = courseList.bucket[courseBucketIdx]; p; p = p->link)
+	{
+		if (courseNode == p)
+			continue;
+		if (p->data.Search(studentKey) != -1)
+		{
+			otherCourseInSameBucket = true;
+			break;
+		}
+	}
+	// 如果没有的话就删除该bucket的索引
+	if (otherCourseInSameBucket == false)
+		studentList.Find(studentKey).data.RemCourseBucket(courseBucketIdx);
+	return true;
+}
+
+void CourseSystem::PrintPickedCourse(unsigned studentKey)
+{
+	Student& student = studentList.Find(studentKey).data;
+	unsigned short courseBucketIdx;
+	for (int i = 0; i < student.num; i++)
+	{
+		courseBucketIdx = student.courseList[i];
+		for (ChainNode<Course>* p = courseList.bucket[courseBucketIdx]; p; p = p->link)
+		{
+			if (p->data.Search(studentKey) != -1)
+			{
+				std::cout << '\n' << p->data;
+			}
+		}
 	}
 }
 
@@ -664,7 +731,7 @@ void CourseSystem::AddCourse()
 	AnalyzedTime t;
 	CLS;
 	ResetIStrm();
-	std::cout << "添加课程：\n请依次输入课程的Key号（最多9位）、课程名称、授课地点和课程的最大容量：" << std::endl;
+	std::cout << "在系统中添加课程：\n请依次输入课程的Key号（最多9位）、课程名称、授课地点和课程的最大容量：" << std::endl;
 	if (std::cin >> key >> name >> place >> maxSize)
 	{
 		if (courseList.Search(key))
@@ -679,7 +746,7 @@ void CourseSystem::AddCourse()
 			"\t\tWeeks1-16 Thu Classes1-3 Sun Classes1-5 Tue Classes3 Classes11-13\n" <<
 			"\t\tWeeks1-16 Thu Classes1-3 Sun Classes1-5 Tue Classes3 Classes11-13 Weeks4-8 Sat Classes2-3" << std::endl;
 		REM_ENTER;
-		if (std::cin, getline(std::cin, time))
+		if (getline(std::cin, time))
 		{
 			if (t.SetTime(time, false)) //判断输入时间是否合法
 			{
@@ -714,10 +781,35 @@ void CourseSystem::AddCourse()
 
 void CourseSystem::AddStudent()
 {
-	// TODO
+	unsigned key;
+	std::string name, NO;
+	CLS;
+	ResetIStrm();
+	std::cout << "在系统中添加学生：\n请依次输入学生的Key号（最多9位）、学生姓名和学号：" << std::endl;
+	if (std::cin >> key >> name >> NO)
+	{
+		if (studentList.Search(key))
+		{
+			std::cout << "已经存在相同Key的学生！" << std::endl;
+			PAUSE;
+			return;
+		}
+		if (studentList.Insert(key, Student(name, NO)))
+		{
+			std::cout << "添加学生成功！" << std::endl;
+			PAUSE;
+			return;
+		}
+		std::cout << "添加学生失败！" << std::endl;
+		PAUSE;
+		return;
+	}
+	std::cout << "输入错误！" << std::endl;
+	PAUSE;
+	return;
 }
 
-void CourseSystem::SearchCourse()  // TODO: 添加显示选了这门课的学生
+void CourseSystem::SearchCourse() 
 {
 	unsigned key;
 	CLS;
@@ -727,7 +819,12 @@ void CourseSystem::SearchCourse()  // TODO: 添加显示选了这门课的学生
 	{
 		if (courseList.Search(key))
 		{
-			std::cout << "查询结果：\n" << courseList.Find(key).data << std::endl;
+			Course& CourseToSearch = courseList.Find(key).data;
+			std::cout << "查询结果：\n" << CourseToSearch << "已选该课程的学生：\n";
+			for (int i = 0; i < CourseToSearch.num; i++)
+			{
+				std::cout << studentList.Find(CourseToSearch.studentList[i]).data;
+			}
 			PAUSE;
 			return;
 		}
@@ -743,7 +840,7 @@ void CourseSystem::SearchCourse()  // TODO: 添加显示选了这门课的学生
 	return;
 }
 
-void CourseSystem::RemInfo(bool isCourse) // TODO:将函数补充为支持删除学生
+void CourseSystem::RemInfo(bool isCourse) 
 {
 	unsigned key;
 	CLS;
@@ -772,14 +869,14 @@ void CourseSystem::RemInfo(bool isCourse) // TODO:将函数补充为支持删除学生
 					if (isCourse)
 					{
 						// 先删除选了这门课的学生对这门课的选课关系，再删除这门课的数据
-						RemCoursesFromStudent(key);
+						RemCourseFromStudents(key);
 						courseList.Remove(key);
 					}
 					else
 					{
-						// 先删除该学生选的所有课的选课关系，再删除这门课的数据
-						RemCoursesFromStudent(key);
-						courseList.Remove(key);
+						// 先删除该学生选的所有课的选课关系，再删除该学生的数据
+						RemStudentFromCourses(key);
+						studentList.Remove(key);
 					}
 					std::cout << "已从系统中移除该" << object << "！" << std::endl;
 					PAUSE;
@@ -801,6 +898,199 @@ void CourseSystem::RemInfo(bool isCourse) // TODO:将函数补充为支持删除学生
 		else
 		{
 			std::cout << object << "不存在！" << std::endl;
+			PAUSE;
+			return;
+		}
+	}
+	std::cout << "输入错误！" << std::endl;
+	PAUSE;
+	return;
+}
+
+void CourseSystem::PickCourse(unsigned studentKey)
+{
+	unsigned courseKey;
+	CLS;
+	ResetIStrm();
+	std::cout << "学生选课：\n请输入要选择的课程的Key：";
+	if (std::cin >> courseKey)
+	{
+		if (courseList.Search(courseKey))
+		{
+			Course& CourseToSearch = courseList.Find(courseKey).data;
+			std::cout << "查询结果：\n\n" << CourseToSearch << '\n';
+			if (CourseToSearch.maxSize == CourseToSearch.num)
+			{
+				std::cout << "该课程已满，无法选课！" << std::endl;
+				PAUSE;
+				return;
+			}
+			if (CourseToSearch.Search(studentKey) != -1)
+			{
+				std::cout << "该课程已经选择，无法重复选课！" << std::endl;
+				PAUSE;
+				return;
+			}
+			AnalyzedTime totalTime = TotalTime(studentKey), courseTime;
+			courseTime.SetTime(CourseToSearch.time);
+			if (totalTime.IsConflict(courseTime))
+			{
+				std::cout << "时间冲突，无法选课！" << std::endl;
+				PAUSE;
+				return;
+			}
+			bool pick;
+			std::cout << "是(1)否(0)选择该课程：";
+			if (std::cin >> pick)
+			{
+				if (pick)
+				{
+					if (PickCourseInTable(studentKey, courseKey))
+					{
+						std::cout << "选课成功！" << std::endl;
+						PAUSE;
+						return;
+					}
+					else
+					{
+						std::cout << "选课失败！" << std::endl;
+						PAUSE;
+						return;
+					}
+				}
+				PAUSE;
+				return;
+			}
+			else
+			{
+				std::cout << "输入错误！" << std::endl;
+				PAUSE;
+				return;
+			}
+		}
+		else
+		{
+			std::cout << "课程不存在！" << std::endl;
+			PAUSE;
+			return;
+		}
+	}
+	std::cout << "输入错误！" << std::endl;
+	PAUSE;
+	return;
+}
+
+void CourseSystem::ExitCourse(unsigned studentKey)
+{
+	unsigned courseKey;
+	CLS;
+	ResetIStrm();
+	std::cout << "学生退选课程：\n请输入要退选的课程的Key：";
+	if (std::cin >> courseKey)
+	{
+		if (courseList.Search(courseKey))
+		{
+			Course& CourseToSearch = courseList.Find(courseKey).data;
+			std::cout << "查询结果：\n\n" << CourseToSearch << std::endl;
+			if (CourseToSearch.Search(studentKey) == -1)
+			{
+				std::cout << "该课程未选择！" << std::endl;
+				PAUSE;
+				return;
+			}
+			bool isExit;
+			std::cout << "是(1)否(0)退选该课程：";
+			if (std::cin >> isExit)
+			{
+				if (isExit)
+				{
+					if (ExitCourseInTable(studentKey, courseKey))
+					{
+						std::cout << "退选成功！" << std::endl;
+						PAUSE;
+						return;
+					}
+					else
+					{
+						std::cout << "退选失败！" << std::endl;
+						PAUSE;
+						return;
+					}
+				}
+				PAUSE;
+				return;
+			}
+			else
+			{
+				std::cout << "输入错误！" << std::endl;
+				PAUSE;
+				return;
+			}
+		}
+		else
+		{
+			std::cout << "课程不存在！" << std::endl;
+			PAUSE;
+			return;
+		}
+	}
+	std::cout << "输入错误！" << std::endl;
+	PAUSE;
+	return;
+}
+
+void CourseSystem::StudentLoop()
+{
+	CLS;
+	ResetIStrm();
+	std::cout << "用户组：学生\n请输入学生的Key：";
+	unsigned studentKey;
+	if (std::cin >> studentKey)
+	{
+		if (studentList.Search(studentKey))
+		{
+			while (1)
+			{
+				CLS;
+				ResetIStrm();
+				std::cout << "学生信息：\n";
+				std::cout << "Key： " << studentKey << '\t' << studentList.Find(studentKey).data;
+				std::cout << "\n请选择服务：\n查看已选课程(1)、选课(2)、退选(3)或者退出(0)\n";
+				int command;
+				if (std::cin >> command)
+				{
+					if (command == 1)
+					{
+						std::cout << "已选课程一览：\n";
+						PrintPickedCourse(studentKey);
+						std::cout << '\n';
+						PAUSE;
+					}
+					else if (command == 2)
+					{
+						PickCourse(studentKey);
+					}
+					else if (command == 3)
+					{
+						ExitCourse(studentKey);
+					}
+					else
+					{
+						PAUSE;
+						return;
+					}
+				}
+				else
+				{
+					std::cout << "输入错误！" << std::endl;
+					PAUSE;
+					return;
+				}
+			}
+		}
+		else
+		{
+			std::cout << "未查找到该学生！" << std::endl;
 			PAUSE;
 			return;
 		}
@@ -836,8 +1126,9 @@ void ResetIStrm()
 	if (std::cin.rdstate())
 	{
 		std::cin.clear();
-		std::cin.ignore(1000, '\n');
 	}
+	std::cout << "(如果阻塞，请按Enter键继续)\n" << std::endl;
+	std::cin.ignore(1000, '\n');
 }
 
 
@@ -982,9 +1273,37 @@ void test4()
 	cSys.AddCourse();
 	cSys.AddCourse();
 	cSys.PrintInfo();
-	//cSys.SearchCourse();
+	cSys.SearchCourse();
 	cSys.RemInfo();
 	cSys.PrintInfo();
+	cSys.AddStudent();
+	cSys.AddStudent();
+	cSys.PrintInfo(false);
+	cSys.RemInfo(false);
+	cSys.PrintInfo(false);
+}
+
+void test5()
+{
+	CourseSystem cSys(COURSE_BUCKET, STUDENT_BUCKET);
+	cSys.courseList.Insert(1, Course("人体解剖", "中山院503", "Weeks1-16 Mon Classes1-3", 35));
+	cSys.courseList.Insert(2, Course("化学信息", "中山院507", "Weeks1-16 Tue Classes1-2", 30));
+	cSys.courseList.Insert(3, Course("数据分析", "东南院104", "Weeks1-16 Wed Classes1-3", 25));
+	cSys.courseList.Insert(4, Course("Python", "中山院403", "Weeks1-16 Tue Classes1-2", 30));
+	cSys.courseList.Insert(5, Course("数据结构", "东南院204", "Weeks1-16 Thu Classes1-2", 100));
+	cSys.courseList.Insert(6, Course("形势与政策", "礼东102", "Weeks1-16 Fri Classes1-2", 200));
+	cSys.studentList.Insert(1, Student("王朝兴", "11320111"));
+	cSys.studentList.Insert(2, Student("张三", "11320154"));
+	cSys.studentList.Insert(3, Student("李四", "TJ210104"));
+	cSys.studentList.Insert(4, Student("王五", "D1120524"));
+	cSys.studentList.Insert(5, Student("赵六", "S1120213"));
+	cSys.studentList.Insert(6, Student("古尔丹", "11119123"));
+	while (1)
+	{
+		cSys.StudentLoop();
+		cSys.SearchCourse();
+		cSys.PrintInfo();
+	}
 }
 
 int main()
@@ -992,7 +1311,8 @@ int main()
 	//test1();
 	//test2();
 	//test3();
-	test4();
+	//test4();
+	//test5();
 	_CrtDumpMemoryLeaks();  // 检测内存是否泄漏
 	return 0;
 }

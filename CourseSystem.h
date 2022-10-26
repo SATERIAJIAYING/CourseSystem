@@ -33,6 +33,7 @@ public:
 	// 根据key在表中找到相应的元素，如果找不到返回false，找到则删除且返回true
 	bool Remove(unsigned k);
 
+	// 根据key找到对应节点
 	// 调用该函数前须调用Search(k)来保证对应元素存在
 	ChainNode<T>& Find(unsigned k);
 
@@ -134,11 +135,14 @@ public:
 	bool SetTime(const std::string strTime, bool add = true);
 };
 
+// 整个选课系统的ui如下：
 // ─┬ PrintInfo(学生)
 //   ├ PrintInfo(课程)
 //   ├ SearchCourse
-//   ├ StudentPick
-//   ├ Add/RemInfo ───┬ AddCourse 
+//   ├ StudentLoop ───┬ PrintPickedCourse
+//   │                   ├ PickCourse
+//   │                   └ ExitCourse
+//   ├ AdminLoop ────┬ AddCourse 
 //   │                   ├ AddStudent
 //   │                   └ RemInfo ───┬ RemStudentFromCourses
 //   │                                    └ RemCoursesFromStudent
@@ -156,7 +160,20 @@ public:
 	// 删除课程哈希表中的相应学生的信息，用于删除学生前清除学生选课关系
 	void RemStudentFromCourses(unsigned studentKey);
 	// 删除学生哈希表中的相应课程的信息，用于删除课程前清除学生选课关系
-	void RemCoursesFromStudent(unsigned courseKey);
+	void RemCourseFromStudents(unsigned courseKey);
+
+	// 根据学生已选课程，求出课程所占用的时间段
+	AnalyzedTime TotalTime(unsigned studentKey);
+
+	// 在两个哈希表中登记学生的选课操作
+	bool PickCourseInTable(unsigned studentKey, unsigned courseKey);
+	// 在两个哈希表中登记学生的退选操作
+	bool ExitCourseInTable(unsigned studentKey, unsigned courseKey);
+
+	// 显示学生所有已选的课程信息
+	void PrintPickedCourse(unsigned studentKey);
+
+	// 以该注释为分界线，该类上述的成员函数与数据结构有关，以下成员函数实现的是ui的功能
 
 	// 显示所有课程/学生信息
 	void PrintInfo(bool isCourse = true);
@@ -167,14 +184,24 @@ public:
 	// 添加学生信息，从选课系统界面输入
 	void AddStudent();
 
-	// 查询课程信息
+	// 查询课程信息，会显示所有选课的学生
 	void SearchCourse();
 
 	// 删除课程/学生信息
 	void RemInfo(bool isCourse = true);
+
+	// 学生选课
+	void PickCourse(unsigned studentKey);
+	// 学生退选
+	void ExitCourse(unsigned studentKey);
+
+	// 学生的操作的循环
+	void StudentLoop();
+
+	friend void test5();
 };
 
-// 重置输入流状态，清空缓冲区
+// 重置输入流状态，清空缓冲区，刷新输出缓冲区
 void ResetIStrm();
 
 // 和课程哈希表有关的测试
@@ -186,4 +213,8 @@ void test2();
 // 和时间解析相关的测试
 void test3();
 
+// 和系统添加删除信息有关的测试
 void test4();
+
+// 和学生操作有关的测试
+void test5();

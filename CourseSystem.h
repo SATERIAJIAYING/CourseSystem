@@ -136,17 +136,19 @@ public:
 };
 
 // 整个选课系统的ui如下：
-// ─┬ PrintInfo(学生)
-//   ├ PrintInfo(课程)
-//   ├ SearchCourse
-//   ├ StudentLoop ───┬ PrintPickedCourse
-//   │                   ├ PickCourse
-//   │                   └ ExitCourse
-//   ├ AdminLoop ────┬ AddCourse 
-//   │                   ├ AddStudent
-//   │                   └ RemInfo ───┬ RemStudentFromCourses
-//   │                                    └ RemCoursesFromStudent
-//   └ 读写文件
+// ─┬ PrintInfo(学生) (1)
+//   ├ PrintInfo(课程) (2)
+//   ├ SearchCourse (3)
+//   ├ StudentLoop (4) ───┬ PrintPickedCourse (1)
+//   │                       ├ PickCourse (2)
+//   │                       └ ExitCourse (3)
+//   └ AdminLoop (5) ────┬ AddCourse (1)
+//                            ├ RemInfo(课程) (2)
+//                            ├ AddStudent (3)
+//                            ├ RemInfo(学生) (4)     
+//                            ├ ReadFromFile (5)
+//                            └ WriteInFile (6)
+
 // 连系两个哈希表，封装用户交互的最顶层的类
 class CourseSystem {
 private:
@@ -173,6 +175,11 @@ public:
 	// 显示学生所有已选的课程信息
 	void PrintPickedCourse(unsigned studentKey);
 
+	// 从文件中读取信息
+	void ReadFromFile();
+	// 将保存的信息写入文件
+	void WriteInFile();
+
 	// 以该注释为分界线，该类上述的成员函数与数据结构有关，以下成员函数实现的是ui的功能
 
 	// 显示所有课程/学生信息
@@ -198,7 +205,14 @@ public:
 	// 学生的操作的循环
 	void StudentLoop();
 
+	// 修改数据操作的循环
+	void AdminLoop();
+
+	// 主循环
+	void MainLoop();
+
 	friend void test5();
+	friend void test6();
 };
 
 // 重置输入流状态，清空缓冲区，刷新输出缓冲区
@@ -218,3 +232,6 @@ void test4();
 
 // 和学生操作有关的测试
 void test5();
+
+// 功能基本完成，预设一部分学生和课程信息
+void test6();

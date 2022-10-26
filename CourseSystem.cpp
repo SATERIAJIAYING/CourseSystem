@@ -13,6 +13,9 @@
 #define COURSE_BUCKET 2000
 // 学生哈希表的bucket容量，容量不限
 #define STUDENT_BUCKET 20000
+// 保存和读取的文件的名字
+#define COURSE_FILE_NAME ("COURSE_DATA.csv")
+#define STUDENT_FILE_NAME ("STUDENT_DATA.csv")
 
 // 检查内存是否泄漏
 #ifdef _DEBUG
@@ -417,7 +420,7 @@ int Student::Search(unsigned short courseBucketIndex)
 
 std::ostream& operator <<(std::ostream& out, Student& student)
 {
-	out << "学生名字： " << student.name << '\t';
+	out << "学生名字： " << student.name << "  ";
 	out << "学号： " << student.NO << '\n';
 	//out << "Bucket数组: " << student.num << " / " << student.maxSize << '\n';
 	return out;
@@ -684,6 +687,7 @@ void CourseSystem::PrintPickedCourse(unsigned studentKey)
 {
 	Student& student = studentList.Find(studentKey).data;
 	unsigned short courseBucketIdx;
+	int count = 0;
 	for (int i = 0; i < student.num; i++)
 	{
 		courseBucketIdx = student.courseList[i];
@@ -691,10 +695,23 @@ void CourseSystem::PrintPickedCourse(unsigned studentKey)
 		{
 			if (p->data.Search(studentKey) != -1)
 			{
-				std::cout << '\n' << p->data;
+				std::cout << "\nKey： " << p->key << '\n';
+				std::cout << p->data;
+				count++;
 			}
 		}
 	}
+	std::cout << "\n一共有" << count << "个课程。" << std::endl;
+}
+
+void CourseSystem::ReadFromFile()
+{
+
+}
+
+void CourseSystem::WriteInFile()
+{
+
 }
 
 void CourseSystem::PrintInfo(bool isCourse)
@@ -820,9 +837,10 @@ void CourseSystem::SearchCourse()
 		if (courseList.Search(key))
 		{
 			Course& CourseToSearch = courseList.Find(key).data;
-			std::cout << "查询结果：\n" << CourseToSearch << "已选该课程的学生：\n";
+			std::cout << "查询结果：\n\n" << CourseToSearch << "\n已选该课程的学生：\n\n";
 			for (int i = 0; i < CourseToSearch.num; i++)
 			{
+				std::cout << "Key： " << studentList.Find(CourseToSearch.studentList[i]).key << '\n';
 				std::cout << studentList.Find(CourseToSearch.studentList[i]).data;
 			}
 			PAUSE;
@@ -1100,6 +1118,94 @@ void CourseSystem::StudentLoop()
 	return;
 }
 
+void CourseSystem::AdminLoop()
+{
+	while (1)
+	{
+		CLS;
+		ResetIStrm();
+		std::cout << "用户组：管理员\n请选择服务：\n添加课程信息(1)、删除课程信息(2)、添加学生信息(3)、删除学生信息(4)或者退出(0)\n";
+		int command;
+		if (std::cin >> command)
+		{
+			if (command == 1)
+			{
+				AddCourse();
+			}
+			else if (command == 2)
+			{
+				RemInfo();
+			}
+			else if (command == 3)
+			{
+				AddStudent();
+			}
+			else if (command == 4)
+			{
+				RemInfo(false);
+			}
+			else
+			{
+				PAUSE;
+				return;
+			}
+		}
+		else
+		{
+			std::cout << "输入错误！" << std::endl;
+			PAUSE;
+			return;
+		}
+	}
+}
+
+void CourseSystem::MainLoop()
+{
+	while (1)
+	{
+		CLS;
+		ResetIStrm();
+		std::cout << "学生选课系统\n请选择服务：\n显示学生信息(1)、显示课程信息(2)、查询课程选课情况(3)、"
+			<< "学生组操作(4)、管理员组操作(5)或者退出(0)\n";
+		int command;
+		if (std::cin >> command)
+		{
+			if (command == 1)
+			{
+				PrintInfo(false);
+			}
+			else if (command == 2)
+			{
+				PrintInfo();
+			}
+			else if (command == 3)
+			{
+				SearchCourse();
+			}
+			else if (command == 4)
+			{
+				StudentLoop();
+			}
+			else if (command == 5)
+			{
+				AdminLoop();
+			}
+			else
+			{
+				PAUSE;
+				return;
+			}
+		}
+		else
+		{
+			std::cout << "输入错误！" << std::endl;
+			PAUSE;
+			return;
+		}
+	}
+}
+
+
 //////////////////////////Test///Other/////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1306,6 +1412,24 @@ void test5()
 	}
 }
 
+void test6()
+{
+	CourseSystem cSys(COURSE_BUCKET, STUDENT_BUCKET);
+	cSys.courseList.Insert(1, Course("人体解剖", "中山院503", "Weeks1-16 Mon Classes1-3", 35));
+	cSys.courseList.Insert(2, Course("化学信息", "中山院507", "Weeks1-16 Tue Classes1-2", 30));
+	cSys.courseList.Insert(3, Course("数据分析", "东南院104", "Weeks1-16 Wed Classes1-3", 25));
+	cSys.courseList.Insert(4, Course("Python", "中山院403", "Weeks1-16 Tue Classes1-2", 30));
+	cSys.courseList.Insert(5, Course("数据结构", "东南院204", "Weeks1-16 Thu Classes1-2", 100));
+	cSys.courseList.Insert(6, Course("形势与政策", "礼东102", "Weeks1-16 Fri Classes1-2", 200));
+	cSys.studentList.Insert(1, Student("王朝兴", "11320111"));
+	cSys.studentList.Insert(2, Student("张三", "11320154"));
+	cSys.studentList.Insert(3, Student("李四", "TJ210104"));
+	cSys.studentList.Insert(4, Student("王五", "D1120524"));
+	cSys.studentList.Insert(5, Student("赵六", "S1120213"));
+	cSys.studentList.Insert(6, Student("古尔丹", "11119123"));
+	cSys.MainLoop();
+}
+
 int main()
 {
 	//test1();
@@ -1313,6 +1437,7 @@ int main()
 	//test3();
 	//test4();
 	//test5();
+	test6();
 	_CrtDumpMemoryLeaks();  // 检测内存是否泄漏
 	return 0;
 }

@@ -176,6 +176,7 @@ public:
 	void PrintPickedCourse(unsigned studentKey);
 
 	// 从文件中读取信息
+	// 读取学生\课程信息时，遇到相同key则不在表中添加该信息；
 	void ReadFromFile();
 	// 将保存的信息写入文件
 	void WriteInFile();

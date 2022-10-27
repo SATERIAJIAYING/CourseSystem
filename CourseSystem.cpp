@@ -2,6 +2,7 @@
 #include <string>
 #include <ctime>
 #include <sstream>
+#include <fstream>
 #include "CourseSystem.h"
 
 #define CLS (system("cls"))
@@ -16,6 +17,7 @@
 // 保存和读取的文件的名字
 #define COURSE_FILE_NAME ("COURSE_DATA.csv")
 #define STUDENT_FILE_NAME ("STUDENT_DATA.csv")
+#define READ_LOG_NAME ("Log.txt")
 
 // 检查内存是否泄漏
 #ifdef _DEBUG
@@ -704,14 +706,203 @@ void CourseSystem::PrintPickedCourse(unsigned studentKey)
 	std::cout << "\n一共有" << count << "个课程。" << std::endl;
 }
 
-void CourseSystem::ReadFromFile()
-{
+// .csv文件保存，无列名行
+// 课程数据：key, name, place, time, maxSize, studentKey *
+// 学生数据：key, name, NO
 
+void CourseSystem::ReadFromFile() // TODO:读取课程信息
+{
+	clock_t startRead = clock(), endRead;
+	std::ifstream inFileStudent, inFileCourse;
+	std::ofstream outLog;
+	outLog.open(READ_LOG_NAME, std::ios::out | std::ios::trunc);
+	// 读取学生数据
+	inFileStudent.open(STUDENT_FILE_NAME, std::ios::in);
+	if (!inFileStudent.is_open())
+	{ 
+		std::cout << "学生数据文件" << STUDENT_FILE_NAME << "读取失败！" << std::endl;
+		outLog << "学生数据文件" << STUDENT_FILE_NAME << "读取失败！" << std::endl;
+	}
+	else
+	{
+		unsigned key;
+		std::string name, NO, line;
+		while (!inFileStudent.eof())
+		{
+			getline(inFileStudent, line);
+			std::stringstream lineStream(line);
+			if (lineStream >> key)
+			{
+				lineStream.get();
+				if (!getline(lineStream, name, ','))
+				{
+					std::cout << "Key：" << key << " 读取学生名字失败！\n";
+					outLog << "Key：" << key << " 读取学生名字失败！\n";
+					continue;
+				}
+				else if (!getline(lineStream, NO))
+				{
+					std::cout << "Key：" << key << " 读取学生学号失败！\n";
+					outLog << "Key：" << key << " 读取学生学号失败！\n";
+					continue;
+				}
+				else
+				{
+					if (!studentList.Insert(key, Student(name, NO)))
+					{
+						std::cout << "Key：" << key << " 添加学生失败，已有相同key的学生信息！\n";
+						outLog << "Key：" << key << " 添加学生失败，已有相同key的学生信息！\n";
+						continue;
+					}
+				}
+			}
+			else
+			{
+				continue;
+			}
+		}
+	}
+	inFileStudent.close();
+	// 读取课程数据
+	inFileCourse.open(COURSE_FILE_NAME, std::ios::in);
+	if (!inFileCourse.is_open())
+	{
+		std::cout << "课程数据文件" << COURSE_FILE_NAME << "读取失败！" << std::endl;
+		outLog << "课程数据文件" << COURSE_FILE_NAME << "读取失败！" << std::endl;
+	}
+	else
+	{
+		unsigned courseKey, studentKey;
+		int maxSize;
+		std::string name, place, time, line;
+		AnalyzedTime tempT;
+		while (!inFileCourse.eof())
+		{
+			getline(inFileCourse, line);
+			std::stringstream lineStream(line);
+			if (lineStream >> courseKey)
+			{
+				lineStream.get();
+				if (!getline(lineStream, name, ','))
+				{
+					std::cout << "Key：" << courseKey << " 读取课程名字失败！\n";
+					outLog << "Key：" << courseKey << " 读取课程名字失败！\n";
+					continue;
+				}
+				else if (!getline(lineStream, place, ','))
+				{
+					std::cout << "Key：" << courseKey << " 读取授课地点失败！\n";
+					outLog << "Key：" << courseKey << " 读取授课地点失败！\n";
+					continue;
+				}
+				else if (!(getline(lineStream, time, ',') && tempT.SetTime(time)))
+				{
+					std::cout << "Key：" << courseKey << " 读取课程时间失败！\n";
+					outLog << "Key：" << courseKey << " 读取课程时间失败！\n";
+					continue;
+				}
+				else if (!(lineStream >> maxSize))
+				{
+					std::cout << "Key：" << courseKey << " 读取课程容量失败！\n";
+					outLog << "Key：" << courseKey << " 读取课程容量失败！\n";
+					continue;
+				}
+				else
+				{
+					if (!courseList.Insert(courseKey, Course(name, place, time, maxSize)))
+					{
+						std::cout << "Key：" << courseKey << " 添加课程失败，已有相同key的课程信息！\n";
+						outLog << "Key：" << courseKey << " 添加课程失败，已有相同key的课程信息！\n";
+						continue;
+					}
+					lineStream.get();
+					int count = 0;
+					while (lineStream >> studentKey)
+					{
+						lineStream.get();
+						if (count >= maxSize)
+						{
+							std::cout << "CourseKey：" << courseKey << " StudentKey：" << studentKey << " 添加选课失败，课程容量已满！\n";
+							outLog << "CourseKey：" << courseKey << " StudentKey：" << studentKey << " 添加选课失败，课程容量已满！\n";
+							continue;
+						}
+						if (!studentList.Search(studentKey))
+						{
+							std::cout << "CourseKey：" << courseKey << " StudentKey：" << studentKey << " 添加选课失败，学生信息不存在！\n";
+							outLog << "CourseKey：" << courseKey << " StudentKey：" << studentKey << " 添加选课失败，学生信息不存在！\n";
+							continue;
+						}
+						if (PickCourseInTable(studentKey, courseKey))
+							count++;
+					}
+				}
+			}
+			else
+			{
+				continue;
+			}
+		}
+	}
+	inFileCourse.close();
+	endRead = clock();
+	std::cout << "数据读取完成，所用时间：" << (float)(endRead - startRead) / CLOCKS_PER_SEC << 's' << std::endl;
+	outLog << "数据读取完成，所用时间：" << (float)(endRead - startRead) / CLOCKS_PER_SEC << 's' << std::endl;
+	outLog.close();
+	PAUSE;
+	return;
 }
 
 void CourseSystem::WriteInFile()
 {
-
+	clock_t startWrite = clock(), endWrite;
+	std::ofstream outFileStudent, outFileCourse;
+	outFileStudent.open(STUDENT_FILE_NAME, std::ios::out | std::ios::trunc);
+	if (!outFileStudent.is_open())
+	{
+		std::cout << "写入文件失败！" << std::endl;
+		PAUSE;
+		return;
+	}
+	for (int i = 0; i < studentList.tableSize; i++)
+	{
+		if (studentList.bucket[i])
+		{
+			for (ChainNode<Student>* p = studentList.bucket[i]; p; p = p->link)
+			{
+				outFileStudent << p->key << ',' << p->data.name << ',' << p->data.NO << '\n';
+			}
+		}
+	}
+	outFileStudent.close();
+	outFileCourse.open(COURSE_FILE_NAME, std::ios::out | std::ios::trunc);
+	if (!outFileCourse.is_open())
+	{
+		std::cout << "写入文件失败！" << std::endl;
+		PAUSE;
+		return;
+	}
+	for (int i = 0; i < courseList.tableSize; i++)
+	{
+		if (courseList.bucket[i])
+		{
+			for (ChainNode<Course>* p = courseList.bucket[i]; p; p = p->link)
+			{
+				outFileCourse << p->key << ',' << p->data.name << ',' << p->data.place << ','
+					<< p->data.time << ',' << p->data.maxSize;
+				for (int j = 0; j < p->data.num; j++)
+				{
+					outFileCourse << ',' << p->data.studentList[j];
+				}
+				outFileCourse << '\n';
+			}
+		}
+	}
+	outFileCourse.close();
+	endWrite = clock();
+	std::cout << "数据保存成功：" << STUDENT_FILE_NAME << ' ' << COURSE_FILE_NAME 
+		<< "所用时间：" << (float)(endWrite - startWrite) / CLOCKS_PER_SEC << 's' << std::endl;
+	PAUSE;
+	return;
 }
 
 void CourseSystem::PrintInfo(bool isCourse)
@@ -1073,7 +1264,7 @@ void CourseSystem::StudentLoop()
 				ResetIStrm();
 				std::cout << "学生信息：\n";
 				std::cout << "Key： " << studentKey << '\t' << studentList.Find(studentKey).data;
-				std::cout << "\n请选择服务：\n查看已选课程(1)、选课(2)、退选(3)或者退出(0)\n";
+				std::cout << "\n请选择服务：\n查看已选课程(1)、选课(2)、退选(3)或者返回上级菜单(0)\n";
 				int command;
 				if (std::cin >> command)
 				{
@@ -1124,7 +1315,7 @@ void CourseSystem::AdminLoop()
 	{
 		CLS;
 		ResetIStrm();
-		std::cout << "用户组：管理员\n请选择服务：\n添加课程信息(1)、删除课程信息(2)、添加学生信息(3)、删除学生信息(4)或者退出(0)\n";
+		std::cout << "用户组：管理员\n请选择服务：\n添加课程信息(1)、删除课程信息(2)、添加学生信息(3)、删除学生信息(4)、读取数据(5)、保存数据(6)或者返回上级菜单(0)\n";
 		int command;
 		if (std::cin >> command)
 		{
@@ -1143,6 +1334,14 @@ void CourseSystem::AdminLoop()
 			else if (command == 4)
 			{
 				RemInfo(false);
+			}
+			else if (command == 5)
+			{
+				ReadFromFile();
+			}
+			else if (command == 6)
+			{
+				WriteInFile();
 			}
 			else
 			{
@@ -1166,7 +1365,7 @@ void CourseSystem::MainLoop()
 		CLS;
 		ResetIStrm();
 		std::cout << "学生选课系统\n请选择服务：\n显示学生信息(1)、显示课程信息(2)、查询课程选课情况(3)、"
-			<< "学生组操作(4)、管理员组操作(5)或者退出(0)\n";
+			<< "学生组操作(4)、管理员组操作(5)或者退出程序(0)\n";
 		int command;
 		if (std::cin >> command)
 		{
@@ -1225,6 +1424,7 @@ int Divisor(int bucket)
 		if (isPrime)
 			return i;
 	}
+	return 0;
 }
 
 void ResetIStrm()
@@ -1251,6 +1451,8 @@ void test1()
 	TEST(clist.Insert(11111509, Course("Python", "中山院403", "1-16周 周二 6-7节", 30)), true);
 	TEST(clist.Insert(11111111, Course("数据结构", "东南院204", "1-16周 周一 4-5节", 100)), true);
 	TEST(clist.Insert(11111310, Course("形势与政策", "礼东102", "1-16周 周二 11-12节", 200)), true);
+	TEST(clist.Insert(11111111, Course("数据结构", "东南院204", "1-16周 周一 4-5节", 100)), false);
+	TEST(clist.Insert(36323543, Course("数据分析", "东南院104", "1-16周 周二 3-5节", 25)), false);
 	clist.PrintHashTable(1);
 	clist.PrintHashTable(2);
 	clist.PrintHashTable(3);
@@ -1437,7 +1639,10 @@ int main()
 	//test3();
 	//test4();
 	//test5();
-	test6();
+	//test6();
+
+	CourseSystem cSys(COURSE_BUCKET, STUDENT_BUCKET);
+	cSys.MainLoop();
 	_CrtDumpMemoryLeaks();  // 检测内存是否泄漏
 	return 0;
 }

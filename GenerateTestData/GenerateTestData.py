@@ -3,8 +3,8 @@ import csv
 
 
 def main():
-    courseNum = 2000
-    studentNum = 80000
+    courseNum = 20000
+    studentNum = 1000000
     maxSizePerCourse = 150
     courseFileName = 'COURSE_DATA.csv'
     studentFileName = 'STUDENT_DATA.csv'

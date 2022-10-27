@@ -11,13 +11,14 @@
 
 // 参数设置
 // 课程哈希表的bucket容量，应小于65535(unsigned short的范围)，对实际存储的课程数量没有上限
-#define COURSE_BUCKET 2000
+#define COURSE_BUCKET 15000
 // 学生哈希表的bucket容量，容量不限
-#define STUDENT_BUCKET 20000
+#define STUDENT_BUCKET 800000
 // 保存和读取的文件的名字
 #define COURSE_FILE_NAME ("COURSE_DATA.csv")
 #define STUDENT_FILE_NAME ("STUDENT_DATA.csv")
 #define READ_LOG_NAME ("Log.txt")
+#define PRINT_FILE_NAME ("Print.txt")
 
 // 检查内存是否泄漏
 #ifdef _DEBUG
@@ -161,14 +162,14 @@ template<class T> ChainNode<T>& HashTable<T>::Find(unsigned k)
 	return *p;
 }
 
-template<class T> void HashTable<T>::PrintHashTable(int n)
+template<class T> void HashTable<T>::PrintHashTable(int n, std::ostream& out)
 {
 	int print_count = 0;
-	std::cout << "//////////////////////////////////////////////\n";
+	out << "//////////////////////////////////////////////\n共有" << currentSize << "个数据。\n";
 	if (n)
-		std::cout << "第" << n << "页结果：\n\n";
+		out << "第" << n << "页结果：\n\n";
 	else
-		std::cout << "信息一览：\n\n";
+		out << "信息一览：\n\n";
 	for (int i = 0; i < tableSize; i++)
 	{
 		if (bucket[i])
@@ -177,7 +178,7 @@ template<class T> void HashTable<T>::PrintHashTable(int n)
 			{ 
 				print_count++;
 				if ((!n) || (n && print_count > (n - 1) * 5 && print_count <= n * 5))
-					std::cout << "Key:\t" << p->key << '\n' << p->data << "\n\n";
+					out << "Key:\t" << p->key << '\n' << p->data << "\n\n";
 				if (n && print_count > n * 5)
 					break;
 			}
@@ -185,9 +186,7 @@ template<class T> void HashTable<T>::PrintHashTable(int n)
 		if (n && print_count > n * 5)
 			break;
 	}
-	if(!n)
-		std::cout << "总共有" << print_count << "个信息。";
-	std::cout << "\n//////////////////////////////////////////////" << std::endl;
+	out << "\n//////////////////////////////////////////////" << std::endl;
 }
 
 
@@ -710,7 +709,7 @@ void CourseSystem::PrintPickedCourse(unsigned studentKey)
 // 课程数据：key, name, place, time, maxSize, studentKey *
 // 学生数据：key, name, NO
 
-void CourseSystem::ReadFromFile() // TODO:读取课程信息
+void CourseSystem::ReadFromFile()
 {
 	clock_t startRead = clock(), endRead;
 	std::ifstream inFileStudent, inFileCourse;
@@ -900,7 +899,7 @@ void CourseSystem::WriteInFile()
 	outFileCourse.close();
 	endWrite = clock();
 	std::cout << "数据保存成功：" << STUDENT_FILE_NAME << ' ' << COURSE_FILE_NAME 
-		<< "所用时间：" << (float)(endWrite - startWrite) / CLOCKS_PER_SEC << 's' << std::endl;
+		<< " 所用时间：" << (float)(endWrite - startWrite) / CLOCKS_PER_SEC << 's' << std::endl;
 	PAUSE;
 	return;
 }
@@ -908,6 +907,8 @@ void CourseSystem::WriteInFile()
 void CourseSystem::PrintInfo(bool isCourse)
 {
 	int n;
+	std::ofstream outFile;
+	bool printToFile = false;
 	ResetIStrm();
 	CLS;
 	if (isCourse)
@@ -916,10 +917,21 @@ void CourseSystem::PrintInfo(bool isCourse)
 		std::cout << "显示学生信息：\n请选择显示所有学生(0)还是显示第n页(n)：";
 	if (std::cin >> n)
 	{
+		// 当全部输出到屏幕且n过大，采用文件输出方式
+		if (n == 0 && (isCourse ? courseList.currentSize : studentList.currentSize) >= 20)
+		{
+			printToFile = true;
+			outFile.open(PRINT_FILE_NAME, std::ios::out | std::ios::trunc);
+		}
 		if (isCourse)
-			courseList.PrintHashTable(n);
+			courseList.PrintHashTable(n, printToFile ? outFile : std::cout);
 		else
-			studentList.PrintHashTable(n);
+			studentList.PrintHashTable(n, printToFile ? outFile : std::cout);
+		if (printToFile)
+		{
+			outFile.close();
+			std::cout << "信息已输出至文件：" << PRINT_FILE_NAME << std::endl;
+		}
 		PAUSE;
 		return;
 	}
@@ -1032,7 +1044,7 @@ void CourseSystem::SearchCourse()
 			for (int i = 0; i < CourseToSearch.num; i++)
 			{
 				std::cout << "Key： " << studentList.Find(CourseToSearch.studentList[i]).key << '\n';
-				std::cout << studentList.Find(CourseToSearch.studentList[i]).data;
+				std::cout << studentList.Find(CourseToSearch.studentList[i]).data <<'\n';
 			}
 			PAUSE;
 			return;
@@ -1643,6 +1655,7 @@ int main()
 
 	CourseSystem cSys(COURSE_BUCKET, STUDENT_BUCKET);
 	cSys.MainLoop();
-	_CrtDumpMemoryLeaks();  // 检测内存是否泄漏
+ 
+	//_CrtDumpMemoryLeaks();  // 检测内存是否泄漏
 	return 0;
 }

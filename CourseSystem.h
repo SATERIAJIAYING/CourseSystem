@@ -39,7 +39,7 @@ public:
 
 	// 显示所有表中元素
 	// 如果n=0直接显示所有结果；n不为0则以5个元素为一页，显示第n页结果
-	void PrintHashTable(int n = 0);
+	void PrintHashTable(int n = 0, std::ostream& out = std::cout);
 };
 
 // 哈希表中的课程信息
@@ -147,7 +147,7 @@ public:
 //                            ├ AddStudent (3)
 //                            ├ RemInfo(学生) (4)     
 //                            ├ ReadFromFile (5)
-//                            └ WriteInFile (6)
+//                            └ WriteInFile (6) TODO:更改学生和课程的信息
 
 // 连系两个哈希表，封装用户交互的最顶层的类
 class CourseSystem {

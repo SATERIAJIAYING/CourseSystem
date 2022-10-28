@@ -120,6 +120,8 @@ private:
 	bool time[16][7][13];  
 public:
 	AnalyzedTime();
+	// 如果weeks为0，代表1-16周第days天第classes节课
+	AnalyzedTime(int weeks, int days, int classes);
 	AnalyzedTime& operator =(const AnalyzedTime& t);
 	bool operator ==(const AnalyzedTime& t);
 	AnalyzedTime& operator +=(const AnalyzedTime& t);
@@ -141,7 +143,8 @@ public:
 //   ├ SearchCourse (3)
 //   ├ StudentLoop (4) ───┬ PrintPickedCourse (1)
 //   │                       ├ PickCourse (2)
-//   │                       └ ExitCourse (3)
+//   │                       ├ ExitCourse (3)
+//   │                       └ PrintCourseTable (4)
 //   └ AdminLoop (5) ────┬ AddCourse (1)
 //                            ├ RemInfo(课程) (2)
 //                            ├ AddStudent (3)
@@ -176,6 +179,9 @@ public:
 
 	// 显示学生所有已选的课程信息
 	void PrintPickedCourse(unsigned studentKey);
+
+	// 构建课程表csv文件并且从外部应用打开
+	void PrintCourseTable(unsigned studentKey);
 
 	// 从文件中读取信息
 	// 读取学生\课程信息时，遇到相同key则不在表中添加该信息；
@@ -242,5 +248,5 @@ void test4();
 // 和学生操作有关的测试
 void test5();
 
-// 功能基本完成，预设一部分学生和课程信息
+// 预设一部分学生和课程信息的测试
 void test6();

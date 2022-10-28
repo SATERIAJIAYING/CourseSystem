@@ -3,9 +3,15 @@ import csv
 
 
 def main():
-    courseNum = 20000
-    studentNum = 1000000
-    maxSizePerCourse = 150
+    """
+    生成用于选课系统的测试数据：
+    注意这些数据中学生的选课关系是随机生成的，没有考虑限制学生必须选时间不冲突的课，
+    因此导入选课系统中会提示很多选课失败。
+    建议生成的数据量：学生数 * 学生平均选课数 = 课程数 * 课程平均学生
+    """
+    courseNum = 10000
+    studentNum = 100000
+    maxSizePerCourse = 150  # 最小课容量5
     courseFileName = 'COURSE_DATA.csv'
     studentFileName = 'STUDENT_DATA.csv'
 
@@ -26,6 +32,7 @@ def gb2312():
 
 def generate_course_data(courseNum, studentNum, maxSizePerCourse, courseFileName):
     dayLs = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    count = 0
     with open(courseFileName, 'w', encoding='gb2312') as f:
         writer = csv.writer(f)
         for i in range(courseNum):
@@ -43,9 +50,9 @@ def generate_course_data(courseNum, studentNum, maxSizePerCourse, courseFileName
                 time += " Classes{}-{} ".format(nLs[0], nLs[1])
             maxSize = random.randint(5, maxSizePerCourse)
             course = [key, name, place, time, maxSize]
-            n = random.randint(5, maxSize)
-            for j in range(n):
-                course.append(random.randint(0, studentNum - 1))
+            for j in range(maxSize):
+                course.append(count % studentNum)
+                count += 1
             writer.writerow(course)
 
 

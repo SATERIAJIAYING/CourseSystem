@@ -145,9 +145,11 @@ public:
 //   └ AdminLoop (5) ────┬ AddCourse (1)
 //                            ├ RemInfo(课程) (2)
 //                            ├ AddStudent (3)
-//                            ├ RemInfo(学生) (4)     
-//                            ├ ReadFromFile (5)
-//                            └ WriteInFile (6) TODO:更改学生和课程的信息
+//                            ├ RemInfo(学生) (4)
+//                            ├ ResetCourse (5)
+//                            ├ ResetStuednt (6)
+//                            ├ ReadFromFile (7)
+//                            └ WriteInFile (8) 
 
 // 连系两个哈希表，封装用户交互的最顶层的类
 class CourseSystem {
@@ -202,6 +204,12 @@ public:
 	void PickCourse(unsigned studentKey);
 	// 学生退选
 	void ExitCourse(unsigned studentKey);
+
+	// 修改某个学生的信息
+	void ResetStudent();
+
+	// 修改某个课程的信息
+	void ResetCourse();
 
 	// 学生的操作的循环
 	void StudentLoop();

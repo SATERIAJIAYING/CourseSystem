@@ -711,6 +711,7 @@ void CourseSystem::PrintPickedCourse(unsigned studentKey)
 
 void CourseSystem::ReadFromFile()
 {
+	std::cout << "正在读取数据. . ." << std::endl;
 	clock_t startRead = clock(), endRead;
 	std::ifstream inFileStudent, inFileCourse;
 	std::ofstream outLog;
@@ -853,6 +854,7 @@ void CourseSystem::ReadFromFile()
 
 void CourseSystem::WriteInFile()
 {
+	std::cout << "正在写入数据. . ." << std::endl;
 	clock_t startWrite = clock(), endWrite;
 	std::ofstream outFileStudent, outFileCourse;
 	outFileStudent.open(STUDENT_FILE_NAME, std::ios::out | std::ios::trunc);
@@ -1039,12 +1041,12 @@ void CourseSystem::SearchCourse()
 	{
 		if (courseList.Search(key))
 		{
-			Course& CourseToSearch = courseList.Find(key).data;
-			std::cout << "查询结果：\n\n" << CourseToSearch << "\n已选该课程的学生：\n\n";
-			for (int i = 0; i < CourseToSearch.num; i++)
+			Course& courseToSearch = courseList.Find(key).data;
+			std::cout << "查询结果：\n\n" << courseToSearch << "\n已选该课程的学生：\n\n";
+			for (int i = 0; i < courseToSearch.num; i++)
 			{
-				std::cout << "Key： " << studentList.Find(CourseToSearch.studentList[i]).key << '\n';
-				std::cout << studentList.Find(CourseToSearch.studentList[i]).data <<'\n';
+				std::cout << "Key： " << studentList.Find(courseToSearch.studentList[i]).key << '\n';
+				std::cout << studentList.Find(courseToSearch.studentList[i]).data <<'\n';
 			}
 			PAUSE;
 			return;
@@ -1260,6 +1262,122 @@ void CourseSystem::ExitCourse(unsigned studentKey)
 	return;
 }
 
+void CourseSystem::ResetStudent()
+{
+	unsigned key;
+	CLS;
+	ResetIStrm();
+	std::cout << "修改学生信息：\n请输入要查询的学生的Key：";
+	if (std::cin >> key)
+	{
+		if (studentList.Search(key))
+		{
+			Student& studentToSearch = studentList.Find(key).data;
+			std::cout << "查询结果：\n\n" << studentToSearch << "\n\n";
+			std::cout << "请依次输入修改后学生的名字和学号：\n";
+			std::string newName, newNO;
+			if (std::cin >> newName >> newNO)
+			{
+				studentToSearch.name = newName;
+				studentToSearch.NO = newNO;
+				std::cout << "修改成功！" << std::endl;
+				PAUSE;
+				return;
+			}
+			else
+			{
+				std::cout << "输入错误！" << std::endl;
+				PAUSE;
+				return;
+			}
+		}
+		else
+		{
+			std::cout << "学生不存在！" << std::endl;
+			PAUSE;
+			return;
+		}
+	}
+	std::cout << "输入错误！" << std::endl;
+	PAUSE;
+	return;
+}
+
+void CourseSystem::ResetCourse()
+{
+	unsigned key;
+	CLS;
+	ResetIStrm();
+	std::cout << "修改课程信息：\n请输入要查询的课程的Key：";
+	if (std::cin >> key)
+	{
+		if (courseList.Search(key))
+		{
+			Course& courseToSearch = courseList.Find(key).data;
+			std::cout << "查询结果：\n\n" << courseToSearch << "\n\n";
+			std::cout << "请依次输入修改后课程的名字、授课地点、课程容量：\n";
+			std::string newName, newPlace, newTime;
+			int newSize;
+			AnalyzedTime t;
+			if (std::cin >> newName >> newPlace >> newSize)
+			{
+				if (newSize < courseToSearch.num)
+				{
+					std::cout << "修改后课程容量少于已选学生数！" << std::endl;
+					PAUSE;
+					return;
+				}
+				std::cout << "请输入修改后课程时间：\n" << "\t输入示例：\n" <<
+					"\t\tWeeks1-16 Thu Classes1-3\n" <<
+					"\t\tWeeks1-16 Thu Classes1-3 Sun Classes1-5 Tue Classes3\n" <<
+					"\t\tWeeks1-16 Thu Classes1-3 Sun Classes1-5 Tue Classes3 Classes11-13\n" <<
+					"\t\tWeeks1-16 Thu Classes1-3 Sun Classes1-5 Tue Classes3 Classes11-13 Weeks4-8 Sat Classes2-3" << std::endl;
+				REM_ENTER;
+				if (getline(std::cin, newTime))
+				{
+					if (t.SetTime(newTime, false))
+					{
+						courseToSearch.name = newName;
+						courseToSearch.place = newPlace;
+						courseToSearch.SetSize(newSize);
+						courseToSearch.time = newTime;
+						std::cout << "修改成功！" << std::endl;
+						PAUSE;
+						return;
+					}
+					else
+					{
+						std::cout << "输入时间非法！" << std::endl;
+						PAUSE;
+						return;
+					}
+				}
+				else
+				{
+					std::cout << "输入错误！" << std::endl;
+					PAUSE;
+					return;
+				}
+			}
+			else
+			{
+				std::cout << "输入错误！" << std::endl;
+				PAUSE;
+				return;
+			}
+		}
+		else
+		{
+			std::cout << "课程不存在！" << std::endl;
+			PAUSE;
+			return;
+		}
+	}
+	std::cout << "输入错误！" << std::endl;
+	PAUSE;
+	return;
+}
+
 void CourseSystem::StudentLoop()
 {
 	CLS;
@@ -1327,7 +1445,8 @@ void CourseSystem::AdminLoop()
 	{
 		CLS;
 		ResetIStrm();
-		std::cout << "用户组：管理员\n请选择服务：\n添加课程信息(1)、删除课程信息(2)、添加学生信息(3)、删除学生信息(4)、读取数据(5)、保存数据(6)或者返回上级菜单(0)\n";
+		std::cout << "用户组：管理员\n请选择服务：\n添加课程信息(1)、删除课程信息(2)、添加学生信息(3)、删除学生信息(4)、\n" 
+			<< "修改课程信息(5)、修改学生信息(6)、读取数据(7)、保存数据(8)或者返回上级菜单(0)\n";
 		int command;
 		if (std::cin >> command)
 		{
@@ -1349,9 +1468,17 @@ void CourseSystem::AdminLoop()
 			}
 			else if (command == 5)
 			{
-				ReadFromFile();
+				ResetCourse();
 			}
 			else if (command == 6)
+			{
+				ResetStudent();
+			}
+			else if (command == 7)
+			{
+				ReadFromFile();
+			}
+			else if (command == 8)
 			{
 				WriteInFile();
 			}
@@ -1401,10 +1528,15 @@ void CourseSystem::MainLoop()
 			{
 				AdminLoop();
 			}
-			else
+			else if (command == 0)
 			{
+				std::cout << "退出程序 ";
 				PAUSE;
 				return;
+			}
+			else
+			{
+
 			}
 		}
 		else

@@ -9,17 +9,17 @@
 #define CLS (system("cls"))
 // 暂停
 #define PAUSE (system("pause"))
-// 清除输入缓冲区中的空格
+// 清除输入缓冲区
 #define REM_ENTER (std::cin.ignore(1000, '\n')) 
-// 外部程序打开
+// 外部程序打开文件
 #define START(fileName) (system((std::string("start ") + fileName).c_str()))
 
 
 // 参数设置
 // 课程哈希表的bucket容量，应小于65535(unsigned short的范围)，对实际存储的课程数量没有上限
-#define COURSE_BUCKET 12500
+#define COURSE_BUCKET // TODO:设定课程哈希表的bucket容量
 // 学生哈希表的bucket容量，容量不限
-#define STUDENT_BUCKET 125000
+#define STUDENT_BUCKET // TODO:设定学生哈希表的bucket容量
 // 保存和读取的文件的名字
 #define COURSE_FILE_NAME ("COURSE_DATA.csv")
 #define STUDENT_FILE_NAME ("STUDENT_DATA.csv")
@@ -760,6 +760,7 @@ void CourseSystem::PrintCourseTable(unsigned studentKey)
 							{
 								outCsv << p->data.name;
 							}
+							break;
 						}
 					}
 				}
@@ -989,6 +990,7 @@ void CourseSystem::PrintInfo(bool isCourse)
 	std::ofstream outFile;
 	bool printToFile = false;
 	std::string fileName;
+	clock_t startT, endT;
 	if (isCourse)
 		fileName = PRINT_COURSE_NAME;
 	else
@@ -1004,6 +1006,7 @@ void CourseSystem::PrintInfo(bool isCourse)
 		// 当全部输出到屏幕且n过大，采用文件输出方式
 		if (n == 0 && (isCourse ? courseList.currentSize : studentList.currentSize) >= 20)
 		{
+			startT = clock();
 			printToFile = true;
 			outFile.open(fileName, std::ios::out | std::ios::trunc);
 			if (!outFile.is_open())
@@ -1017,7 +1020,9 @@ void CourseSystem::PrintInfo(bool isCourse)
 			else
 				studentList.PrintHashTable(n, outFile);
 			outFile.close();
-			std::cout << "信息已输出至文件：" << fileName << std::endl;
+			endT = clock();
+			std::cout << "信息已输出至文件：" << fileName << " 所用时间：" 
+				<< (float)(endT - startT) / CLOCKS_PER_SEC << 's' << std::endl;
 			START(fileName);
 		}
 		else
@@ -1627,9 +1632,13 @@ void CourseSystem::MainLoop()
 			}
 			else if (command == 0)
 			{
-				std::cout << "退出程序 ";
-				PAUSE;
-				return;
+				std::cout << "请确认是(1)否(other)退出程序：";
+				if (std::cin >> command && command == 1)
+				{
+					std::cout << "退出成功！" << std::endl;
+					PAUSE;
+					return;
+				}
 			}
 			else
 			{
@@ -1640,7 +1649,6 @@ void CourseSystem::MainLoop()
 		{
 			std::cout << "输入错误！" << std::endl;
 			PAUSE;
-			return;
 		}
 	}
 }

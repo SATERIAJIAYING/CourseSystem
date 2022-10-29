@@ -9,8 +9,8 @@ def main():
     因此导入选课系统中会提示很多选课失败。
     建议生成的数据量：学生数 * 学生平均选课数 = 课程数 * 课程平均学生
     """
-    courseNum = 10000
-    studentNum = 100000
+    courseNum =  # TODO:设定生成课程的量
+    studentNum =  # TODO:设定生成学生的量
     maxSizePerCourse = 150  # 最小课容量5
     courseFileName = 'COURSE_DATA.csv'
     studentFileName = 'STUDENT_DATA.csv'
@@ -31,7 +31,8 @@ def gb2312():
 
 
 def generate_course_data(courseNum, studentNum, maxSizePerCourse, courseFileName):
-    dayLs = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    dayLs = [' Mon', ' Tue', ' Wed', ' Thu', ' Fri', ' Sat', ' Sun']
+    weekLs = [' Weeks1-16', ' Weeks4-8', ' Weeks1-12', ' Weeks4-16']
     count = 0
     with open(courseFileName, 'w', encoding='gb2312') as f:
         writer = csv.writer(f)
@@ -44,10 +45,9 @@ def generate_course_data(courseNum, studentNum, maxSizePerCourse, courseFileName
             n = random.randint(1, 4)
             time = ""
             for j in range(n):
-                nLs = sorted([random.randint(1, 16) for k in range(2)])
-                time += "Weeks{}-{} ".format(nLs[0], nLs[1]) + random.choice(dayLs)
-                nLs = sorted([random.randint(1, 13) for k in range(2)])
-                time += " Classes{}-{} ".format(nLs[0], nLs[1])
+                time += random.choice(weekLs) + random.choice(dayLs)
+                classBegin = random.randint(1, 11)
+                time += " Classes{}-{} ".format(classBegin, classBegin + 2)
             maxSize = random.randint(5, maxSizePerCourse)
             course = [key, name, place, time, maxSize]
             for j in range(maxSize):

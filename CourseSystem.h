@@ -90,7 +90,7 @@ public:
 		: name(name), NO(NO), courseList(NULL), num(0), maxSize(0) {}
 	~Student();
 
-	// 调整动态数组容量，以8字节为单位
+	// 调整动态数组容量，以8字节为单位，broaden为true代表扩容，反之缩减容量
 	bool SetSize(bool broaden = true);
 
 	// 添加课程bucket索引号
@@ -138,21 +138,21 @@ public:
 };
 
 // 整个选课系统的ui如下：
-// ─┬ PrintInfo(学生) (1)
-//   ├ PrintInfo(课程) (2)
-//   ├ SearchCourse (3)
-//   ├ StudentLoop (4) ───┬ PrintPickedCourse (1)
-//   │                       ├ PickCourse (2)
-//   │                       ├ ExitCourse (3)
-//   │                       └ PrintCourseTable (4)
-//   └ AdminLoop (5) ────┬ AddCourse (1)
-//                            ├ RemInfo(课程) (2)
-//                            ├ AddStudent (3)
-//                            ├ RemInfo(学生) (4)
-//                            ├ ResetCourse (5)
-//                            ├ ResetStuednt (6)
-//                            ├ ReadFromFile (7)
-//                            └ WriteInFile (8) 
+// MainLoop ─┬ PrintInfo(学生) (1)
+//           ├ PrintInfo(课程) (2)
+//           ├ SearchCourse (3)
+//           ├ StudentLoop (4) ───┬ PrintPickedCourse (1)
+//           │                    ├ PickCourse (2)
+//           │                    ├ ExitCourse (3)
+//           │                    └ PrintCourseTable (4)
+//           └ AdminLoop (5) ────┬ AddCourse (1)
+//                               ├ RemInfo(课程) (2)
+//                               ├ AddStudent (3)
+//                               ├ RemInfo(学生) (4)
+//                               ├ ResetCourse (5)
+//                               ├ ResetStuednt (6)
+//                               ├ ReadFromFile (7)
+//                               └ WriteInFile (8)
 
 // 连系两个哈希表，封装用户交互的最顶层的类
 class CourseSystem {
@@ -189,6 +189,7 @@ public:
 	// 将保存的信息写入文件
 	void WriteInFile();
 
+	//================================================================================
 	// 以该注释为分界线，该类上述的成员函数与数据结构有关，以下成员函数实现的是ui的功能
 
 	// 显示所有课程/学生信息
